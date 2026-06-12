@@ -17,7 +17,7 @@ const {
 const app = express();
 const httpServer = http.createServer(app);
 const io = new Server(httpServer);
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
 app.use(express.static('public'));
 
@@ -330,6 +330,28 @@ io.on('connection', (socket) => {
     const resultado = espiarCarta(sala.partida, socket.id, objetivoId);
     if (resultado.error) return callback(resultado);
     callback({ ok: true, carta: resultado.carta });
+  });
+
+  socket.on('chatMensaje', ({ texto }) => {
+    const sala = obtenerSalaPorSocket(socket.id);
+    if (!sala) return;
+    const jugador = sala.partida?.jugadores.find(j => j.id === socket.id)
+      || sala.partida?.espectadores?.find(j => j.id === socket.id)
+      || sala.jugadores.find(j => j.id === socket.id);
+    if (!jugador) return;
+    const textoLimpio = String(texto).trim().slice(0, 120);
+    if (!textoLimpio) return;
+    io.to(sala.codigo).emit('chatMensaje', { nickname: jugador.nickname, texto: textoLimpio, id: socket.id });
+  });
+
+  socket.on('reaccion', ({ tipo }) => {
+    const sala = obtenerSalaPorSocket(socket.id);
+    if (!sala) return;
+    const jugador = sala.partida?.jugadores.find(j => j.id === socket.id)
+      || sala.partida?.espectadores?.find(j => j.id === socket.id)
+      || sala.jugadores.find(j => j.id === socket.id);
+    if (!jugador) return;
+    io.to(sala.codigo).emit('reaccion', { jugadorId: socket.id, nickname: jugador.nickname, tipo });
   });
 
   socket.on('disconnect', () => {

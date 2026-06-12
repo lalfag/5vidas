@@ -104,6 +104,113 @@ const REVERSO_SVG = `<svg viewBox="0 0 90 130" xmlns="http://www.w3.org/2000/svg
   <circle cx="74" cy="65" r="2" fill="rgba(240,192,64,0.28)"/>
 </svg>`;
 
+// ── REACCIONES ────────────────────────────────
+const REACCIONES = {
+  smilyface: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="14" r="2.5" fill="currentColor"/><circle cx="24" cy="14" r="2.5" fill="currentColor"/><path d="M10 22 C13 28, 23 28, 26 22" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`,
+  lolface:   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" stroke="currentColor" stroke-width="2" fill="none"/><path d="M10 13 L14 17 L10 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M26 13 L22 17 L26 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M12 24 Q18 30, 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M6 16 A3.5 3.5 0 0 0 8 22 A3.5 3.5 0 0 0 6 16 Z" fill="currentColor"/><path d="M30 16 A3.5 3.5 0 0 1 28 22 A3.5 3.5 0 0 1 30 16 Z" fill="currentColor"/></svg>`,
+  angryface: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" stroke="currentColor" stroke-width="2" fill="none"/><path d="M11 11 L15 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M25 11 L21 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="13" cy="17" r="2.5" fill="currentColor"/><circle cx="23" cy="17" r="2.5" fill="currentColor"/><path d="M12 26 Q18 21, 24 26" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg>`,
+  surprise:  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="14" r="3" fill="currentColor"/><circle cx="24" cy="14" r="3" fill="currentColor"/><ellipse cx="18" cy="25" rx="5" ry="6" stroke="currentColor" stroke-width="2" fill="none"/></svg>`,
+  thinking:  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="14" r="2.5" fill="currentColor"/><circle cx="24" cy="14" r="2.5" fill="currentColor"/><path d="M22 10 Q24 7, 26 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M14 24 Q18 24, 22 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M16 28 C16 32, 20 32, 20 28" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`,
+  thumbup:   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M10 16 V30 H6 V16 Z M14 16 C14 10, 18 6, 22 6 V12 H30 A4 4 0 0 1 30 20 H28 V24 A4 4 0 0 1 24 28 H14 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/></svg>`,
+  thumbdown: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M10 20 V6 H6 V20 Z M14 20 C14 26, 18 30, 22 30 V24 H30 A4 4 0 0 0 30 16 H28 V12 A4 4 0 0 0 24 8 H14 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/></svg>`,
+  fire:      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M18 4 C18 4, 10 12, 10 20 A8 8 0 0 0 26 20 C26 12, 18 4, 18 4 Z M18 12 C18 12, 14 16, 14 20 A4 4 0 0 0 22 20 C22 16, 18 12, 18 12 Z" fill="currentColor"/></svg>`,
+  skull:     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M18 4 A12 12 0 0 0 6 16 V22 C6 26, 10 30, 14 30 V32 H22 V30 C26 30, 30 26, 30 22 V16 A12 12 0 0 0 18 4 Z" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="13" cy="18" r="3" fill="currentColor"/><circle cx="23" cy="18" r="3" fill="currentColor"/><path d="M16 26 L20 26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+  heart:     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M18 10 C14 4, 6 6, 6 14 C6 22, 18 30, 18 30 C18 30, 30 22, 30 14 C30 6, 22 4, 18 10 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/></svg>`,
+  target:    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="18" cy="18" r="11" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="18" cy="18" r="6" fill="currentColor"/></svg>`,
+  zzz:       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M22 6 L30 6 L22 14 L30 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M12 16 L18 16 L12 22 L18 22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M6 24 L10 24 L6 28 L10 28" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`
+};
+
+let reaccionCooldown = false;
+
+function enviarReaccion(tipo) {
+  if (reaccionCooldown) return;
+  reaccionCooldown = true;
+  setTimeout(() => { reaccionCooldown = false; }, 2000);
+  socket.emit('reaccion', { tipo });
+}
+
+function mostrarReaccionFlotante(nickname, tipo) {
+  const svg = REACCIONES[tipo];
+  if (!svg) return;
+  const el = document.createElement('div');
+  el.className = 'reaccion-flotante';
+  el.innerHTML = `<span class="reaccion-nombre">${nickname}</span>${svg}`;
+  // Posición horizontal aleatoria
+  el.style.left = (10 + Math.random() * 70) + '%';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2200);
+}
+
+function crearPanelReacciones() {
+  const panel = document.createElement('div');
+  panel.id = 'panel-reacciones';
+  panel.innerHTML = Object.entries(REACCIONES).map(([tipo, svg]) =>
+    `<button class="btn-reaccion" data-tipo="${tipo}" title="${tipo}">${svg}</button>`
+  ).join('');
+  panel.querySelectorAll('.btn-reaccion').forEach(btn => {
+    btn.addEventListener('click', () => enviarReaccion(btn.dataset.tipo));
+  });
+  document.body.appendChild(panel);
+}
+
+function crearChat() {
+  if (document.getElementById('chat-container')) return;
+
+  const chat = document.createElement('div');
+  chat.id = 'chat-container';
+  chat.innerHTML = `
+    <button id="chat-toggle" title="Chat">💬 <span id="chat-badge" class="oculto">0</span></button>
+    <div id="chat-panel" class="oculto">
+      <div id="chat-mensajes"></div>
+      <div id="chat-input-row">
+        <input id="chat-input" type="text" placeholder="Mensaje..." maxlength="120" autocomplete="off"/>
+        <button id="chat-enviar">➤</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(chat);
+
+  let chatAbierto = false;
+  let mensajesNuevos = 0;
+
+  const toggle    = document.getElementById('chat-toggle');
+  const panel     = document.getElementById('chat-panel');
+  const input     = document.getElementById('chat-input');
+  const badge     = document.getElementById('chat-badge');
+
+  toggle.addEventListener('click', () => {
+    chatAbierto = !chatAbierto;
+    panel.classList.toggle('oculto', !chatAbierto);
+    if (chatAbierto) {
+      mensajesNuevos = 0;
+      badge.classList.add('oculto');
+      badge.textContent = '0';
+      input.focus();
+      const msgs = document.getElementById('chat-mensajes');
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+  });
+
+  document.getElementById('chat-enviar').addEventListener('click', enviarMensaje);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') enviarMensaje(); });
+
+  function enviarMensaje() {
+    const texto = input.value.trim();
+    if (!texto) return;
+    socket.emit('chatMensaje', { texto });
+    input.value = '';
+  }
+
+  window._chatAbierto    = () => chatAbierto;
+  window._chatNuevoMsg   = () => {
+    mensajesNuevos++;
+    if (!chatAbierto) {
+      badge.textContent = mensajesNuevos > 9 ? '9+' : mensajesNuevos;
+      badge.classList.remove('oculto');
+    }
+  };
+}
+
 // ── CREAR CARTA ELEMENT ───────────────────────
 const NOMBRES_VALOR = { 1:'A', 10:'J', 11:'C', 12:'R' };
 
@@ -308,7 +415,8 @@ function renderizarJuego(estado) {
 
   // Panel apuestas
   const panelApuestas = $('panel-apuestas');
-  if (!soyEspectador && estado.fase === 'apuestas' && miJugador.apuesta === null && (esRondaFinal || esMiTurno)) {
+  const apuestaSimultanea = esRondaFinal && estado.modalidad === 'clasico';
+  if (!soyEspectador && estado.fase === 'apuestas' && miJugador.apuesta === null && (apuestaSimultanea || esMiTurno)) {
     panelApuestas.classList.remove('oculto');
     renderizarBotonesApuesta(estado);
   } else {
@@ -320,7 +428,7 @@ function renderizarJuego(estado) {
   if (soyEspectador) {
     msgJuego.textContent = '👁️ Modo espectador';
   } else if (estado.fase === 'apuestas') {
-    if (esRondaFinal) {
+    if (apuestaSimultanea) {
       msgJuego.textContent = miJugador.apuesta !== null
         ? '✓ Apuesta registrada — esperando al resto...'
         : '🃏 Apuesta en secreto: ¿ganas esta baza?';
@@ -515,7 +623,28 @@ socket.on('salaActualizada', sala => {
   if (pantallas.entrada.style.display === 'flex') irA('sala');
 });
 
-socket.on('partidaIniciada', () => { sonidoInicio(); irA('juego'); });
+socket.on('partidaIniciada', () => {
+  sonidoInicio();
+  irA('juego');
+  if (!document.getElementById('panel-reacciones')) crearPanelReacciones();
+  crearChat();
+});
+
+socket.on('reaccion', ({ nickname, tipo }) => {
+  mostrarReaccionFlotante(nickname, tipo);
+});
+
+socket.on('chatMensaje', ({ nickname, texto, id }) => {
+  const msgs = document.getElementById('chat-mensajes');
+  if (!msgs) return;
+  const esMio = id === miId;
+  const div = document.createElement('div');
+  div.className = `chat-msg ${esMio ? 'chat-msg-mio' : ''}`;
+  div.innerHTML = `<span class="chat-nick">${esMio ? 'Tú' : nickname}</span><span class="chat-texto">${texto}</span>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  if (window._chatNuevoMsg && !esMio) window._chatNuevoMsg();
+});
 
 socket.on('estadoActualizado', estado => {
   if (pantallas.juego.style.display === 'flex') {
@@ -611,7 +740,10 @@ socket.on('mesaActualizada', ({ mesa }) => {
   });
 });
 
+let ultimoResumen = [];
+
 socket.on('subrondaTerminada', ({ resumen }) => {
+  ultimoResumen = resumen;
   const miResumen = resumen.find(r => r.id === miId);
   if (miResumen && miResumen.vidasRestadas > 0) sonidoPierdesVidas();
   irA('resumen');
@@ -650,15 +782,18 @@ socket.on('partidaTerminada', ({ ganador }) => {
     : '💀 Nadie sobrevivió';
 
   const tbodyFin = document.querySelector('#tabla-fin tbody');
-  if (tbodyFin && miEstado) {
+  if (tbodyFin) {
     tbodyFin.innerHTML = '';
-    const jugadores = [...miEstado.jugadores].sort((a, b) => b.vidas - a.vidas);
+    // Usar ultimoResumen que tiene las vidas ya restadas correctamente
+    const fuente = ultimoResumen.length > 0 ? ultimoResumen : (miEstado?.jugadores || []);
+    const jugadores = [...fuente].sort((a, b) => (b.vidasRestantes ?? b.vidas ?? 0) - (a.vidasRestantes ?? a.vidas ?? 0));
     jugadores.forEach((j, i) => {
+      const vidas = j.vidasRestantes ?? j.vidas ?? 0;
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${i + 1}º</td>
         <td>${j.nickname}</td>
-        <td>${j.vidas > 0 ? j.vidas : '💀'}</td>
+        <td>${vidas > 0 ? vidas : '💀'}</td>
       `;
       tbodyFin.appendChild(tr);
     });
