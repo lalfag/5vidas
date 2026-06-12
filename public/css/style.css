@@ -1,0 +1,766 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --rojo:      #e94560;
+  --rojo-dark: #c73652;
+  --azul:      #0f3460;
+  --azul-mid:  #16213e;
+  --azul-dark: #0a0a1a;
+  --dorado:    #f0c040;
+  --verde:     #4caf50;
+  --gris:      #aaa;
+  --blanco:    #f0f0f0;
+}
+
+/* ── KEYFRAMES ── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(0.6) rotate(-5deg); }
+  70%  { transform: scale(1.08) rotate(1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(233,69,96,0.3); }
+  50%       { box-shadow: 0 0 20px rgba(233,69,96,0.7); }
+}
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-5px); }
+  40%     { transform: translateX(5px); }
+  60%     { transform: translateX(-4px); }
+  80%     { transform: translateX(4px); }
+}
+
+@keyframes flashGreen {
+  0%,100% { background: rgba(15,52,96,0.5); }
+  40%     { background: rgba(76,175,80,0.25); }
+}
+
+@keyframes flashRed {
+  0%,100% { background: rgba(15,52,96,0.5); }
+  40%     { background: rgba(233,69,96,0.2); }
+}
+
+@keyframes panelSlide {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes entradaPantalla {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes latido {
+  0%,100% { transform: scale(1); }
+  50%     { transform: scale(1.18); }
+}
+
+/* ── BASE ── */
+body {
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  background: var(--azul-dark);
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(233,69,96,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(15,52,96,0.4) 0%, transparent 50%);
+  color: var(--blanco);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+h1 {
+  font-family: 'Cinzel', serif;
+  font-size: 3.5rem;
+  font-weight: 900;
+  letter-spacing: 6px;
+  text-align: center;
+  background: linear-gradient(135deg, #fff 0%, var(--dorado) 50%, var(--rojo) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+  animation: fadeIn 0.8s ease;
+}
+h1::after {
+  content: '';
+  display: block;
+  width: 60px; height: 3px;
+  background: linear-gradient(90deg, var(--rojo), var(--dorado));
+  margin: 0.5rem auto 1.5rem;
+  border-radius: 2px;
+}
+h2 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.6rem; font-weight: 700;
+  margin-bottom: 0.5rem; text-align: center;
+  color: var(--blanco);
+}
+
+/* ── PANTALLAS ── */
+.pantalla {
+  display: none; flex-direction: column;
+  align-items: center; gap: 0.8rem;
+  width: 100%; max-width: 480px; padding: 2rem;
+  animation: entradaPantalla 0.35s ease;
+}
+.oculto { display: none !important; }
+
+/* ── INPUTS ── */
+input[type="text"] {
+  width: 100%; padding: 0.8rem 1.2rem; border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  color: var(--blanco); font-size: 1rem;
+  font-family: 'Inter', sans-serif;
+  text-align: center; outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  backdrop-filter: blur(4px);
+}
+input[type="text"]::placeholder { color: rgba(255,255,255,0.3); }
+input[type="text"]:focus {
+  border-color: var(--rojo);
+  background: rgba(233,69,96,0.08);
+}
+
+/* ── BOTONES ── */
+.botones { display: flex; gap: 0.8rem; width: 100%; }
+
+button {
+  flex: 1; padding: 0.8rem 1rem; border: none; border-radius: 10px;
+  background: linear-gradient(135deg, var(--rojo), var(--rojo-dark));
+  color: white; font-size: 0.95rem;
+  font-family: 'Inter', sans-serif; font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 15px rgba(233,69,96,0.3);
+  letter-spacing: 0.3px;
+}
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(233,69,96,0.45);
+}
+button:active { transform: translateY(1px); }
+button.secundario {
+  background: linear-gradient(135deg, var(--azul), #1a4a7a);
+  box-shadow: 0 4px 15px rgba(15,52,96,0.4);
+}
+button.secundario:hover { box-shadow: 0 6px 20px rgba(15,52,96,0.6); }
+button:disabled {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.3);
+  cursor: not-allowed; transform: none; box-shadow: none;
+}
+
+/* ── MENSAJES ── */
+.error    { color: var(--rojo); font-size: 0.85rem; text-align: center; }
+.info     { color: var(--gris); font-size: 0.9rem; text-align: center; }
+.subtitulo { color: var(--gris); font-size: 0.85rem; margin-bottom: 0.3rem; }
+
+/* ── LOBBY ── */
+#lista-jugadores {
+  list-style: none; width: 100%;
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+#lista-jugadores li {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 0.7rem 1rem; border-radius: 10px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.95rem; backdrop-filter: blur(4px);
+  animation: slideUp 0.3s ease both;
+}
+.corona { font-size: 0.8rem; color: var(--dorado); }
+#codigo-sala {
+  font-family: 'Cinzel', serif;
+  background: linear-gradient(135deg, var(--rojo), var(--rojo-dark));
+  padding: 0.15rem 0.7rem; border-radius: 6px;
+  letter-spacing: 4px; font-weight: 700; font-size: 1.1rem;
+  box-shadow: 0 2px 10px rgba(233,69,96,0.4);
+}
+
+/* ── PANTALLA JUEGO ── */
+#pantalla-juego {
+  max-width: 640px; width: 100%;
+  display: none; flex-direction: column; gap: 0.7rem; padding: 1rem;
+}
+
+#cabecera-juego {
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 0.6rem 1rem; border-radius: 10px;
+  font-size: 0.85rem; color: var(--gris);
+  backdrop-filter: blur(4px);
+  gap: 1rem;
+}
+#info-subronda { font-family: 'Cinzel', serif; font-size: 0.9rem; color: var(--blanco); }
+#info-fase { color: var(--rojo); font-weight: 600; font-size: 0.85rem; }
+
+/* ── BANNER ESPECTADOR ── */
+#banner-espectador {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--gris); text-align: center;
+  padding: 0.5rem 1rem; border-radius: 10px;
+  font-size: 0.85rem; width: 100%;
+  animation: fadeIn 0.4s ease;
+}
+
+/* ── RIVALES ── */
+#rivales { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+
+.rival {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; padding: 0.5rem 0.8rem;
+  font-size: 0.82rem;
+  display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
+  min-width: 90px;
+  transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+  animation: slideUp 0.3s ease both;
+}
+.rival .nombre { font-weight: 600; font-size: 0.88rem; }
+.rival .vidas  { color: var(--rojo); font-size: 0.8rem; }
+.rival .apuesta-rival { color: var(--dorado); font-size: 0.72rem; }
+.rival.turno-activo {
+  border-color: var(--rojo);
+  background: rgba(233,69,96,0.1);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+/* ── MESA ── */
+#mesa {
+  background: rgba(15,52,96,0.5);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px; padding: 1rem;
+  min-height: 110px;
+  display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+  backdrop-filter: blur(4px);
+  transition: background 0.4s ease;
+}
+#mesa.flash-verde { animation: flashGreen 0.8s ease; }
+#mesa.flash-rojo  { animation: flashRed  0.8s ease; }
+
+.label-mesa {
+  font-size: 0.7rem; color: rgba(255,255,255,0.3);
+  text-transform: uppercase; letter-spacing: 3px;
+}
+#cartas-mesa { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; }
+
+/* ── CARTAS ── */
+
+/* Nuevos keyframes para cartas especiales */
+@keyframes brilloAs {
+  0%,100% { box-shadow: 0 4px 14px rgba(0,0,0,0.3), 0 0 0 0 currentColor; }
+  50%     { box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 14px 3px currentColor; }
+}
+/* Rey: brillo casi igual al as — sombra dorada pulsante */
+@keyframes brilloRey {
+  0%,100% { opacity: 0.55; }
+  50%     { opacity: 1; }
+}
+/* Caballo: brillo moderado */
+@keyframes brilloCaballo {
+  0%,100% { opacity: 0.3; }
+  50%     { opacity: 0.7; }
+}
+/* Sota: brillo mínimo */
+@keyframes brilloSota {
+  0%,100% { opacity: 0.15; }
+  50%     { opacity: 0.35; }
+}
+/* As: aura de color pulsante */
+@keyframes brilloAs {
+  0%,100% { opacity: 0.4; }
+  50%     { opacity: 1; }
+}
+@keyframes cartaJugadaMesa {
+  0%   { opacity: 0; transform: scale(0.7) rotate(-8deg) translateY(-10px); }
+  60%  { transform: scale(1.07) rotate(1deg) translateY(0); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+.carta {
+  width: 68px; height: 102px; border-radius: 10px;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 1px,
+      rgba(0,0,0,0.012) 1px,
+      rgba(0,0,0,0.012) 2px
+    ),
+    linear-gradient(170deg, #fefefe 0%, #f5f2eb 60%, #ede9df 100%);
+  border: 1.5px solid rgba(0,0,0,0.12);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: space-between;
+  padding: 4px 4px 14px 4px; cursor: pointer;
+  transition: transform 0.18s cubic-bezier(.2,.8,.3,1.2), box-shadow 0.18s ease;
+  position: relative; user-select: none;
+  box-shadow:
+    0 2px 5px rgba(0,0,0,0.18),
+    0 6px 18px rgba(0,0,0,0.14),
+    inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+/* Marco interior decorativo */
+.carta::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 6px;
+  border: 0.5px solid rgba(0,0,0,0.08);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Carta al ser repartida — solo opacity, NO transform (evita bloquear hover) */
+.carta.carta-nueva {
+  animation: fadeIn 0.3s ease both;
+}
+/* Carta al caer en la mesa — ídem */
+.carta.carta-jugada {
+  animation: fadeIn 0.35s ease both;
+}
+
+/* ── HOVER: transform en TODAS las cartas seleccionables por igual ── */
+.carta.seleccionable         { cursor: pointer; }
+.carta.seleccionable:hover   { transform: translateY(-14px) scale(1.04); box-shadow: 0 4px 8px rgba(0,0,0,0.12), 0 18px 36px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.9); }
+.carta.no-seleccionable      { cursor: default; }
+.carta.no-seleccionable:hover { transform: none; }
+
+/* ── PALOS: borde + acento de color ── */
+.carta.oros {
+  border-color: rgba(176,134,0,0.35);
+  box-shadow:
+    0 2px 5px rgba(0,0,0,0.18),
+    0 6px 18px rgba(0,0,0,0.14),
+    inset 0 1px 0 rgba(255,255,255,0.9),
+    inset 0 0 0 1.5px rgba(176,134,0,0.12);
+}
+.carta.copas {
+  border-color: rgba(180,0,40,0.3);
+  box-shadow:
+    0 2px 5px rgba(0,0,0,0.18),
+    0 6px 18px rgba(0,0,0,0.14),
+    inset 0 1px 0 rgba(255,255,255,0.9),
+    inset 0 0 0 1.5px rgba(180,0,40,0.1);
+}
+.carta.espadas {
+  border-color: rgba(30,80,150,0.3);
+  box-shadow:
+    0 2px 5px rgba(0,0,0,0.18),
+    0 6px 18px rgba(0,0,0,0.14),
+    inset 0 1px 0 rgba(255,255,255,0.9),
+    inset 0 0 0 1.5px rgba(30,80,150,0.1);
+}
+.carta.bastos {
+  border-color: rgba(30,110,40,0.3);
+  box-shadow:
+    0 2px 5px rgba(0,0,0,0.18),
+    0 6px 18px rgba(0,0,0,0.14),
+    inset 0 1px 0 rgba(255,255,255,0.9),
+    inset 0 0 0 1.5px rgba(30,110,40,0.1);
+}
+
+/* ── VALOR en esquinas ── */
+.carta-esquina { display: flex; flex-direction: column; align-items: center; line-height: 1; z-index: 1; }
+.carta-tl { align-self: flex-start; }
+.carta-br { align-self: flex-end; transform: rotate(180deg); }
+
+.carta-val {
+  font-family: 'Cinzel', serif;
+  font-size: 15px !important;
+  font-weight: 900 !important;
+  line-height: 1;
+  display: block;
+  color: inherit;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.8);
+}
+
+/* Colores de valor por palo */
+.carta.oros   .carta-val { color: #8a6000; }
+.carta.copas  .carta-val { color: #a0001e; }
+.carta.espadas .carta-val { color: #0f3a7a; }
+.carta.bastos .carta-val { color: #1a5c22; }
+
+
+/* ── CENTRO ── */
+.carta-centro {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; z-index: 1;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15));
+}
+
+/* ── NOMBRE JUGADOR DEBAJO ── */
+.jugador-carta {
+  font-size: 0.48rem; color: #999;
+  position: absolute; bottom: 3px; left: 0; right: 0;
+  text-align: center; font-family: 'Inter', sans-serif;
+  letter-spacing: 0.3px;
+  z-index: 1;
+}
+
+/* ── FIGURAS (Rey=12, Caballo=11, Sota=10): marco dorado y fondo tenue ── */
+.carta.figura {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 1px,
+      rgba(0,0,0,0.012) 1px,
+      rgba(0,0,0,0.012) 2px
+    ),
+    linear-gradient(170deg, #fffef5 0%, #fdf7e3 60%, #f7eed0 100%);
+}
+.carta.figura::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 7px;
+  border: 1px solid rgba(176,134,0,0.25);
+  box-shadow: 0 0 8px 1px rgba(176,134,0,0.25);
+  pointer-events: none;
+  z-index: 0;
+}
+/* Hover figura: solo sube más alto que una carta normal */
+.carta.figura.seleccionable:hover {
+  transform: translateY(-16px) scale(1.06);
+}
+
+/* Animaciones en ::after — el elemento raíz queda libre para el hover transform */
+.carta.figura.rey::after     { animation: brilloRey     2.6s ease-in-out infinite; }
+.carta.figura.caballo::after { animation: brilloCaballo 3.2s ease-in-out infinite; }
+.carta.figura.sota::after    { animation: brilloSota    4s   ease-in-out infinite; }
+
+/* ── ASES: fondo levemente degradado por palo + brillo pulsante ── */
+.carta.as { /* sin animation aquí — va en ::after */ }
+
+/* As de Oros: fondo dorado muy sutil */
+.carta.as.oros {
+  background:
+    repeating-linear-gradient(45deg, transparent, transparent 1px, rgba(0,0,0,0.01) 1px, rgba(0,0,0,0.01) 2px),
+    linear-gradient(170deg, #fffef5 0%, #fff8e0 55%, #fdf0c0 100%);
+  color: rgba(176,134,0,0.6);
+}
+.carta.as.oros::after {
+  content: '';
+  position: absolute; inset: 3px;
+  border-radius: 7px;
+  border: 1px solid rgba(200,160,0,0.3);
+  box-shadow: 0 0 10px 2px rgba(176,134,0,0.4);
+  pointer-events: none; z-index: 0;
+  animation: brilloAs 2.4s ease-in-out infinite;
+}
+
+/* As de Copas: fondo carmesí muy sutil */
+.carta.as.copas {
+  background:
+    repeating-linear-gradient(45deg, transparent, transparent 1px, rgba(0,0,0,0.01) 1px, rgba(0,0,0,0.01) 2px),
+    linear-gradient(170deg, #fff8f8 0%, #fff0f0 55%, #fde0e0 100%);
+  color: rgba(160,0,30,0.6);
+}
+.carta.as.copas::after {
+  content: '';
+  position: absolute; inset: 3px;
+  border-radius: 7px;
+  border: 1px solid rgba(180,0,40,0.22);
+  box-shadow: 0 0 10px 2px rgba(180,0,40,0.35);
+  pointer-events: none; z-index: 0;
+  animation: brilloAs 2.4s ease-in-out infinite;
+}
+
+/* As de Espadas: fondo azul muy sutil */
+.carta.as.espadas {
+  background:
+    repeating-linear-gradient(45deg, transparent, transparent 1px, rgba(0,0,0,0.01) 1px, rgba(0,0,0,0.01) 2px),
+    linear-gradient(170deg, #f6f8ff 0%, #ecf0fc 55%, #dde6fa 100%);
+  color: rgba(15,58,122,0.6);
+}
+.carta.as.espadas::after {
+  content: '';
+  position: absolute; inset: 3px;
+  border-radius: 7px;
+  border: 1px solid rgba(30,80,160,0.22);
+  box-shadow: 0 0 10px 2px rgba(30,80,160,0.35);
+  pointer-events: none; z-index: 0;
+  animation: brilloAs 2.4s ease-in-out infinite;
+}
+
+/* As de Bastos: fondo verde muy sutil */
+.carta.as.bastos {
+  background:
+    repeating-linear-gradient(45deg, transparent, transparent 1px, rgba(0,0,0,0.01) 1px, rgba(0,0,0,0.01) 2px),
+    linear-gradient(170deg, #f5fbf5 0%, #eaf5ea 55%, #d8eed8 100%);
+  color: rgba(26,92,34,0.6);
+}
+.carta.as.bastos::after {
+  content: '';
+  position: absolute; inset: 3px;
+  border-radius: 7px;
+  border: 1px solid rgba(30,110,40,0.22);
+  box-shadow: 0 0 10px 2px rgba(30,110,40,0.35);
+  pointer-events: none; z-index: 0;
+  animation: brilloAs 2.4s ease-in-out infinite;
+}
+
+/* Hover ases: solo sube, la animación mantiene el aura de color */
+.carta.as.seleccionable:hover { transform: translateY(-16px) scale(1.06); }
+
+/* ── CARTA ANULADA (tras cancelación) ── */
+.carta.anulada {
+  opacity: 0.35;
+  filter: grayscale(0.7);
+  transform: scale(0.93);
+  transition: opacity 0.4s, filter 0.4s, transform 0.3s;
+}
+
+/* Reverso */
+.carta-reverso {
+  width: 64px; height: 96px; border-radius: 10px;
+  border: none; padding: 0; overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+  cursor: default;
+}
+
+/* Carta mini rivales ronda final */
+.carta-mini {
+  width: 36px; height: 54px; border-radius: 6px;
+  background: white; border: 1.5px solid #ddd;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 2px; margin-top: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  animation: popIn 0.3s ease both;
+}
+.carta-mini-val { font-family: 'Cinzel', serif; font-size: 11px; font-weight: 700; line-height: 1; }
+.carta-mini-ico { width: 18px; height: 18px; }
+
+/* ── MI ZONA ── */
+#mi-zona {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px; padding: 0.9rem;
+  display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+  backdrop-filter: blur(4px);
+}
+#mi-info {
+  display: flex; gap: 1rem; align-items: center;
+  font-size: 0.9rem; flex-wrap: wrap; justify-content: center;
+}
+#mi-nickname { font-weight: 700; font-size: 1rem; }
+#mis-vidas { color: var(--rojo); font-weight: 600; transition: color 0.3s; }
+#mis-vidas.shake { animation: shake 0.4s ease; }
+#mis-vidas.latido { animation: latido 0.3s ease; }
+#mi-apuesta-info { color: var(--verde); font-size: 0.85rem; font-weight: 600; }
+#mi-mano { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; }
+
+/* ── PANELES ── */
+#panel-apuestas, #panel-ases {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; padding: 0.9rem;
+  display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+  width: 100%; backdrop-filter: blur(4px);
+  animation: panelSlide 0.25s ease both;
+}
+#panel-apuestas p, #panel-ases p {
+  font-size: 0.88rem; color: var(--gris); text-align: center;
+}
+#botones-apuesta, #botones-as {
+  display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center;
+}
+#botones-apuesta button, #botones-as button {
+  flex: none; min-width: 48px; padding: 0.5rem 0.7rem;
+  font-size: 1rem; border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(233,69,96,0.2);
+}
+
+/* ── MENSAJE JUEGO ── */
+#msg-juego {
+  text-align: center; font-size: 0.9rem;
+  min-height: 1.2rem; color: var(--gris);
+  font-style: italic;
+  transition: color 0.3s;
+  animation: fadeIn 0.3s ease;
+}
+
+/* ── RESUMEN ── */
+#pantalla-resumen { max-width: 540px; }
+#tabla-resumen, #tabla-fin {
+  width: 100%; border-collapse: collapse; margin: 1rem 0;
+  background: rgba(255,255,255,0.03);
+  border-radius: 10px; overflow: hidden;
+}
+#tabla-resumen th, #tabla-fin th {
+  padding: 0.6rem 1rem; text-align: center;
+  background: rgba(255,255,255,0.06);
+  color: var(--gris); font-weight: 500;
+  font-size: 0.82rem; text-transform: uppercase; letter-spacing: 1px;
+}
+#tabla-resumen td, #tabla-fin td {
+  padding: 0.6rem 1rem; text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 0.92rem;
+}
+#tabla-resumen tr { animation: slideUp 0.3s ease both; }
+#tabla-resumen tr:nth-child(2) { animation-delay: 0.05s; }
+#tabla-resumen tr:nth-child(3) { animation-delay: 0.1s; }
+#tabla-resumen tr:nth-child(4) { animation-delay: 0.15s; }
+#tabla-resumen tr:nth-child(5) { animation-delay: 0.2s; }
+#tabla-resumen tr:nth-child(6) { animation-delay: 0.25s; }
+#tabla-resumen tr:last-child td, #tabla-fin tr:last-child td { border-bottom: none; }
+#tabla-resumen td.negativo { color: var(--rojo); font-weight: 600; }
+
+/* ── FIN DE PARTIDA ── */
+#pantalla-fin { max-width: 480px; }
+#fin-ganador {
+  font-family: 'Cinzel', serif; font-size: 1.8rem; text-align: center;
+  background: linear-gradient(135deg, var(--dorado), var(--rojo));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; margin-bottom: 1rem;
+  animation: slideUp 0.5s ease both;
+}
+
+/* ── CARTA MINI (rivales ronda final) — sin cambios ── */
+
+/* ── MODALIDADES ── */
+.btn-modo {
+  flex: 1; font-size: 0.85rem; padding: 0.6rem 0.5rem;
+}
+.btn-modo.activo {
+  background: linear-gradient(135deg, var(--rojo), var(--rojo-dark));
+  box-shadow: 0 4px 15px rgba(233,69,96,0.4);
+}
+
+/* Carta boca abajo en mesa (twisted) */
+.carta-oculta-mesa {
+  width: 64px; height: 96px; border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+  animation: popIn 0.35s cubic-bezier(0.175,0.885,0.32,1.275) both;
+}
+
+/* Mano chaos: cartas barajadas con indicador */
+.mano-chaos .carta {
+  filter: brightness(0.92);
+}
+.mano-chaos .carta::after {
+  content: '?';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.4rem;
+  color: rgba(0,0,0,0.12);
+  font-family: 'Cinzel', serif;
+  pointer-events: none;
+}
+
+/* Panel de espionaje (chaos ronda final) */
+#panel-espiar {
+  background: rgba(240,192,64,0.08);
+  border: 1px solid rgba(240,192,64,0.25);
+  border-radius: 12px; padding: 0.9rem;
+  display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+  width: 100%;
+  animation: panelSlide 0.25s ease both;
+}
+#panel-espiar p { font-size: 0.88rem; color: var(--dorado); text-align: center; }
+
+/* ── MODAL INSTRUCCIONES ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-caja {
+  background: #0f1b30;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 1.5rem;
+  width: 90%; max-width: 520px;
+  max-height: 85vh; overflow-y: auto;
+  position: relative;
+  animation: slideUp 0.25s ease;
+}
+
+.modal-cerrar {
+  position: absolute; top: 1rem; right: 1rem;
+  background: rgba(255,255,255,0.08);
+  border-radius: 50%; width: 32px; height: 32px;
+  font-size: 0.85rem; padding: 0; flex: none;
+  box-shadow: none;
+}
+.modal-cerrar:hover { background: rgba(233,69,96,0.3); }
+
+.modal-caja h2 { margin-bottom: 1rem; }
+
+/* Tabs */
+.modal-tabs {
+  display: flex; gap: 0.4rem; margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding-bottom: 0.6rem;
+}
+.tab-btn {
+  flex: 1; padding: 0.5rem; font-size: 0.85rem;
+  background: rgba(255,255,255,0.05);
+  box-shadow: none; border-radius: 8px;
+}
+.tab-btn.activo {
+  background: linear-gradient(135deg, var(--rojo), var(--rojo-dark));
+  box-shadow: 0 2px 8px rgba(233,69,96,0.3);
+}
+
+.tab-contenido { display: none; flex-direction: column; gap: 0.8rem; }
+.tab-contenido.activo { display: flex; }
+
+/* Bloques */
+.instruccion-bloque {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px; padding: 0.8rem 1rem;
+}
+.instruccion-bloque h3 { font-size: 0.95rem; margin-bottom: 0.4rem; }
+.instruccion-bloque p  { font-size: 0.85rem; color: #ccc; line-height: 1.5; }
+
+.as-oros   { border-color: rgba(240,192,64,0.3); }
+.as-copas  { border-color: rgba(233,69,96,0.3); }
+.as-espadas{ border-color: rgba(74,144,217,0.3); }
+.as-bastos { border-color: rgba(76,175,80,0.3); }
+.modo-twisted { border-color: rgba(74,144,217,0.3); }
+.modo-chaos   { border-color: rgba(240,192,64,0.3); }
+
+/* Tabla modos */
+.tabla-modos {
+  width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.8rem;
+}
+.tabla-modos th {
+  padding: 0.4rem; text-align: center;
+  color: var(--gris); font-weight: 500;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.tabla-modos td {
+  padding: 0.4rem; text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.tabla-modos td:first-child { text-align: left; color: #ccc; }

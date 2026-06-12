@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>5 Vidas</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <!-- MODAL: Instrucciones -->
+  <div id="modal-instrucciones" class="modal-overlay oculto">
+    <div class="modal-caja">
+      <button id="btn-cerrar-modal" class="modal-cerrar">✕</button>
+      <h2>Cómo jugar</h2>
+
+      <div class="modal-tabs">
+        <button class="tab-btn activo" data-tab="basico">Básico</button>
+        <button class="tab-btn" data-tab="ases">Ases</button>
+        <button class="tab-btn" data-tab="modos">Modos</button>
+      </div>
+
+      <div id="tab-basico" class="tab-contenido activo">
+        <div class="instruccion-bloque">
+          <h3>❤️ Objetivo</h3>
+          <p>Todos empiezan con <strong>5 vidas</strong>. El último en sobrevivir gana. Se pierde la diferencia entre lo apostado y lo ganado.</p>
+        </div>
+        <div class="instruccion-bloque">
+          <h3>🃏 Estructura</h3>
+          <p>5 subrondas: se reparten <strong>5, 4, 3, 2 y 1</strong> cartas respectivamente. Cada subronda tiene tantas bazas como cartas repartidas.</p>
+        </div>
+        <div class="instruccion-bloque">
+          <h3>💬 Apuestas</h3>
+          <p>Antes de jugar, cada jugador apuesta cuántas bazas cree que ganará. El <strong>último en apostar</strong> no puede decir un número que haga que la suma total sea igual al número de cartas.</p>
+        </div>
+        <div class="instruccion-bloque">
+          <h3>⚔️ Bazas</h3>
+          <p>Gana la carta con mayor valor. Si dos jugadores tiran el mismo número, <strong>ambas se anulan</strong>. Si se anulan todas, gana la última carta jugada.</p>
+        </div>
+        <div class="instruccion-bloque">
+          <h3>🔢 Valores</h3>
+          <p>1 (As), 2–7, Sota (J=10), Caballo (C=11), Rey (R=12)</p>
+        </div>
+        <div class="instruccion-bloque">
+          <h3>🎭 Ronda final (1 carta)</h3>
+          <p>En el modo clásico <strong>no ves tu propia carta</strong> pero sí las de los rivales. Las apuestas son simultáneas y secretas. No hay restricción del último apostador.</p>
+        </div>
+      </div>
+
+      <div id="tab-ases" class="tab-contenido oculto">
+        <div class="instruccion-bloque as-oros">
+          <h3>🥇 As de Oros</h3>
+          <p>La carta más poderosa del juego. <strong>Gana automáticamente</strong> la baza si sobrevive en mesa.</p>
+        </div>
+        <div class="instruccion-bloque as-copas">
+          <h3>🍷 As de Copas</h3>
+          <p>No gana por sí solo, pero si sobrevive <strong>multiplica ×2 las bazas</strong> del ganador de esa baza.</p>
+        </div>
+        <div class="instruccion-bloque as-espadas">
+          <h3>⚔️ As de Espadas</h3>
+          <p>Permite <strong>eliminar una carta</strong> de la mesa antes de calcular el ganador. No puedes eliminar la tuya propia. Puedes pasar.</p>
+        </div>
+        <div class="instruccion-bloque as-bastos">
+          <h3>🪵 As de Bastos</h3>
+          <p>Intercambia su valor numérico con otra carta de la mesa. Útil para cambiar quién gana la baza.</p>
+        </div>
+        <div class="instruccion-bloque">
+          <h3>⚠️ Anulación de ases</h3>
+          <p>Si dos jugadores tiran el <strong>mismo as</strong> (mismo palo), ambos se anulan y pierden sus poderes.</p>
+        </div>
+      </div>
+
+      <div id="tab-modos" class="tab-contenido oculto">
+        <div class="instruccion-bloque modo-twisted">
+          <h3>🃏 Twisted</h3>
+          <p>Las cartas se juegan <strong>boca abajo</strong>. Cuando todos han jugado, se revelan a la vez. En la ronda final <strong>sí ves tu propia carta</strong>.</p>
+        </div>
+        <div class="instruccion-bloque modo-chaos">
+          <h3>🌀 Chaos</h3>
+          <p>Ves tus cartas y apuestas con normalidad. Cuando todos han apostado, tu mano se <strong>baraja aleatoriamente</strong> — ya no sabes qué carta estás jugando. En la ronda final sí ves tu carta y puedes <strong>espiar una carta rival</strong> (con 3+ jugadores).</p>
+        </div>
+        <div class="instruccion-bloque">
+          <h3>📊 Comparativa</h3>
+          <table class="tabla-modos">
+            <thead><tr><th></th><th>Clásico</th><th>Twisted</th><th>Chaos</th></tr></thead>
+            <tbody>
+              <tr><td>Ves tus cartas al apostar</td><td>✓</td><td>✓</td><td>✓</td></tr>
+              <tr><td>Sabes qué juegas</td><td>✓</td><td>✓</td><td>✗</td></tr>
+              <tr><td>Rivales ven tus cartas</td><td>✗</td><td>✗</td><td>✗</td></tr>
+              <tr><td>Ves tu carta en ronda final</td><td>✗</td><td>✓</td><td>✓</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PANTALLA 1: Entrada -->
+  <div id="pantalla-entrada" class="pantalla">
+    <h1>5 Vidas</h1>
+    <input id="input-nickname" type="text" placeholder="Tu nickname" maxlength="16" />
+    <div class="botones">
+      <button id="btn-crear">Crear sala</button>
+      <button id="btn-unirse-form" class="secundario">Unirse a sala</button>
+    </div>
+    <div id="form-unirse" class="oculto" style="width:100%;display:flex;flex-direction:column;gap:0.6rem">
+      <input id="input-codigo" type="text" placeholder="Código (ej: ABCD)" maxlength="4" />
+      <button id="btn-unirse">Unirse</button>
+    </div>
+    <button id="btn-instrucciones" class="secundario" style="margin-top:0.5rem">📖 Cómo jugar</button>
+    <p id="msg-error" class="error oculto"></p>
+  </div>
+
+  <!-- PANTALLA 2: Sala de espera -->
+  <div id="pantalla-sala" class="pantalla oculto">
+    <h2>Sala <span id="codigo-sala"></span></h2>
+    <p class="subtitulo">Comparte el código con tus amigos</p>
+    <ul id="lista-jugadores"></ul>
+    <p id="msg-sala" class="info"></p>
+    <div id="selector-modalidad" class="oculto" style="width:100%;display:flex;flex-direction:column;gap:0.5rem">
+      <p style="color:#aaa;font-size:0.85rem;text-align:center">Modo de juego</p>
+      <div style="display:flex;gap:0.5rem;width:100%">
+        <button id="btn-modo-clasico" class="btn-modo activo" data-modo="clasico">⚔️ Clásico</button>
+        <button id="btn-modo-twisted" class="btn-modo secundario" data-modo="twisted">🃏 Twisted</button>
+        <button id="btn-modo-chaos"   class="btn-modo secundario" data-modo="chaos">🌀 Chaos</button>
+      </div>
+      <p id="desc-modalidad" style="color:#aaa;font-size:0.8rem;text-align:center">Modo estándar — apuestas y bazas clásicas</p>
+    </div>
+    <button id="btn-iniciar" class="oculto">▶ Iniciar partida</button>
+  </div>
+
+  <!-- PANTALLA 3: Juego -->
+  <div id="pantalla-juego" class="pantalla oculto">
+    <div id="cabecera-juego">
+      <span id="info-subronda">Subronda 1/5</span>
+      <span id="info-fase">Apuestas</span>
+      <span id="info-modalidad" style="font-size:0.75rem;color:#f0c040"></span>
+    </div>
+    <div id="banner-espectador" class="oculto">💀 Estás eliminado — modo espectador</div>
+    <div id="rivales"></div>
+    <div id="mesa">
+      <p class="label-mesa">Mesa</p>
+      <div id="cartas-mesa"></div>
+    </div>
+    <div id="mi-zona">
+      <div id="mi-info">
+        <span id="mi-nickname"></span>
+        <span id="mis-vidas"></span>
+        <span id="mi-apuesta-info"></span>
+      </div>
+      <div id="mi-mano"></div>
+    </div>
+    <div id="panel-apuestas" class="oculto">
+      <p id="msg-apuesta"></p>
+      <div id="botones-apuesta"></div>
+    </div>
+    <div id="panel-ases" class="oculto">
+      <p id="msg-as"></p>
+      <div id="botones-as"></div>
+    </div>
+    <p id="msg-juego" class="info"></p>
+  </div>
+
+  <!-- PANTALLA 4: Resumen subronda -->
+  <div id="pantalla-resumen" class="pantalla oculto">
+    <h2>Fin de subronda</h2>
+    <table id="tabla-resumen">
+      <thead>
+        <tr><th>Jugador</th><th>Apostó</th><th>Ganó</th><th>-Vidas</th><th>Vidas</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button id="btn-siguiente" class="oculto">Siguiente subronda →</button>
+    <p id="msg-resumen" class="info"></p>
+  </div>
+
+  <!-- PANTALLA 5: Fin de partida -->
+  <div id="pantalla-fin" class="pantalla oculto">
+    <h2 id="fin-ganador"></h2>
+    <table id="tabla-fin">
+      <thead>
+        <tr><th>Pos.</th><th>Jugador</th><th>Vidas</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button id="btn-nueva-partida">Volver al inicio</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>
