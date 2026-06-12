@@ -100,9 +100,12 @@ function registrarApuesta(partida, jugadorId, cantidad) {
   if (!jugador) return { error: 'Jugador no encontrado' };
   if (partida.fase !== 'apuestas') return { error: 'No es fase de apuestas' };
 
-  const esRondaFinal = partida.subrondaActual === 4;
+  const esRondaFinal     = partida.subrondaActual === 4;
+  // En clásico la ronda final es simultánea (todos apuestan a la vez)
+  // En twisted/chaos la ronda final es secuencial (ves tu carta, turno normal)
+  const apuestaSimultanea = esRondaFinal && partida.modalidad === 'clasico';
 
-  if (!esRondaFinal && partida.jugadores[partida.turnoIdx].id !== jugadorId) {
+  if (!apuestaSimultanea && partida.jugadores[partida.turnoIdx].id !== jugadorId) {
     return { error: 'No es tu turno' };
   }
   if (jugador.apuesta !== null) return { error: 'Ya has apostado' };
@@ -114,7 +117,8 @@ function registrarApuesta(partida, jugadorId, cantidad) {
   partida.apuestasRealizadas++;
   log(partida, `${jugador.nickname} apuesta ${cantidad}`);
 
-  if (!esRondaFinal) {
+  // Avanzar turno en todos los modos excepto ronda final clásica (simultánea)
+  if (!apuestaSimultanea) {
     partida.turnoIdx = siguienteTurno(partida.turnoIdx, partida.jugadores.length);
   }
 
