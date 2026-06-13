@@ -246,16 +246,16 @@ io.on('connection', (socket) => {
   });
 
   // ── LOBBY ──
-  socket.on('crearSala', ({ nickname, token }, callback) => {
+  socket.on('crearSala', ({ nickname, token, avatar }, callback) => {
     if (!nickname || nickname.trim().length < 2) return callback({ error: 'Nickname demasiado corto' });
-    const sala = crearSala(socket.id, nickname.trim(), token);
+    const sala = crearSala(socket.id, nickname.trim(), token, avatar || null);
     socket.join(sala.codigo);
     callback({ ok: true, sala });
   });
 
-  socket.on('unirseASala', ({ nickname, codigo, token }, callback) => {
+  socket.on('unirseASala', ({ nickname, codigo, token, avatar }, callback) => {
     if (!nickname || nickname.trim().length < 2) return callback({ error: 'Nickname demasiado corto' });
-    const resultado = unirseASala(codigo.toUpperCase(), socket.id, nickname.trim(), token);
+    const resultado = unirseASala(codigo.toUpperCase(), socket.id, nickname.trim(), token, avatar || null);
     if (resultado.error) return callback(resultado);
     socket.join(codigo.toUpperCase());
     io.to(codigo.toUpperCase()).emit('salaActualizada', resultado);

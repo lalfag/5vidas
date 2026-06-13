@@ -1,12 +1,12 @@
 const salas  = {};
 const tokens = {}; // token → codigoSala
 
-function crearSala(socketId, nickname, token) {
+function crearSala(socketId, nickname, token, avatar = null) {
   const codigo = generarCodigo();
   salas[codigo] = {
     codigo,
     jugadores: [
-      { id: socketId, nickname, vidas: 5, listo: false, token }
+      { id: socketId, nickname, vidas: 5, listo: false, token, avatar }
     ],
     creador:      socketId,
     estado:       'esperando',
@@ -17,7 +17,7 @@ function crearSala(socketId, nickname, token) {
   return salas[codigo];
 }
 
-function unirseASala(codigo, socketId, nickname, token) {
+function unirseASala(codigo, socketId, nickname, token, avatar = null) {
   const sala = salas[codigo];
   if (!sala) return { error: 'Sala no encontrada' };
   if (sala.estado !== 'esperando') return { error: 'La partida ya ha comenzado' };
@@ -25,8 +25,7 @@ function unirseASala(codigo, socketId, nickname, token) {
   if (sala.jugadores.find(j => j.nickname === nickname)) {
     return { error: 'Ese nickname ya está en uso en esta sala' };
   }
-
-  sala.jugadores.push({ id: socketId, nickname, vidas: 5, listo: false, token });
+  sala.jugadores.push({ id: socketId, nickname, vidas: 5, listo: false, token, avatar });
   if (token) tokens[token] = codigo;
   return sala;
 }

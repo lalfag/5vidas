@@ -9,6 +9,7 @@ let miModalidad = "clasico";
 
 const pantallas = {
   entrada:  document.getElementById('pantalla-entrada'),
+  avatar:   document.getElementById('pantalla-avatar'),
   sala:     document.getElementById('pantalla-sala'),
   juego:    document.getElementById('pantalla-juego'),
   resumen:  document.getElementById('pantalla-resumen'),
@@ -35,7 +36,75 @@ function obtenerToken() {
   return token;
 }
 
-// ── ICONOS SVG DE PALOS (por Gemini) ───────────────────────
+// ── AVATARES ─────────────────────────────────
+const AVATARES = {
+  personajes: {
+    Caballero: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="16" y="0" width="4" height="4" fill="#ef4444"/><rect x="18" y="2" width="4" height="2" fill="#ef4444"/><rect x="8" y="4" width="20" height="12" fill="#b0b8c8"/><rect x="6" y="8" width="2" height="6" fill="#7a8494"/><rect x="28" y="8" width="2" height="6" fill="#7a8494"/><rect x="10" y="8" width="16" height="4" fill="#475569"/><rect x="12" y="10" width="2" height="1" fill="#1e293b"/><rect x="22" y="10" width="2" height="1" fill="#1e293b"/><rect x="8" y="16" width="20" height="16" fill="#b0b8c8"/><rect x="6" y="18" width="2" height="12" fill="#7a8494"/><rect x="28" y="18" width="2" height="12" fill="#7a8494"/><rect x="6" y="16" width="6" height="4" fill="#7a8494"/><rect x="24" y="16" width="6" height="4" fill="#7a8494"/><rect x="16" y="20" width="4" height="6" fill="#7a8494"/></svg>`,
+    Mago: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="16" y="0" width="4" height="4" fill="#7c3aed"/><rect x="14" y="4" width="8" height="4" fill="#7c3aed"/><rect x="12" y="8" width="12" height="4" fill="#7c3aed"/><rect x="16" y="8" width="4" height="2" fill="#fbbf24"/><rect x="10" y="12" width="16" height="4" fill="#7c3aed"/><rect x="6" y="16" width="24" height="2" fill="#fbbf24"/><rect x="10" y="18" width="16" height="6" fill="#f5c99a"/><rect x="12" y="19" width="2" height="2" fill="#1a1a2e"/><rect x="22" y="19" width="2" height="2" fill="#1a1a2e"/><rect x="12" y="22" width="12" height="6" fill="#e2e8f0"/><rect x="8" y="24" width="4" height="12" fill="#3b82f6"/><rect x="24" y="24" width="4" height="12" fill="#3b82f6"/><rect x="12" y="26" width="12" height="10" fill="#7c3aed"/></svg>`,
+    Pirata: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="8" y="2" width="20" height="4" fill="#1a1a2e"/><rect x="6" y="6" width="24" height="4" fill="#1a1a2e"/><rect x="10" y="10" width="16" height="2" fill="#e94560"/><rect x="10" y="12" width="16" height="10" fill="#f5c99a"/><rect x="10" y="14" width="16" height="1" fill="#1a1a2e"/><rect x="13" y="13" width="4" height="4" fill="#1a1a2e"/><rect x="21" y="14" width="2" height="2" fill="#1a1a2e"/><rect x="10" y="20" width="16" height="4" fill="#4a3728"/><rect x="10" y="24" width="16" height="12" fill="#e94560"/><rect x="14" y="24" width="8" height="12" fill="#1a1a2e"/></svg>`,
+    Ninja: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="10" y="4" width="16" height="16" fill="#1a1a2e"/><rect x="8" y="8" width="2" height="10" fill="#1a1a2e"/><rect x="26" y="8" width="2" height="10" fill="#1a1a2e"/><rect x="6" y="12" width="2" height="6" fill="#e94560"/><rect x="12" y="10" width="12" height="4" fill="#f5c99a"/><rect x="14" y="11" width="2" height="2" fill="#1a1a2e"/><rect x="20" y="11" width="2" height="2" fill="#1a1a2e"/><rect x="10" y="20" width="16" height="16" fill="#1a1a2e"/><rect x="8" y="24" width="2" height="10" fill="#1a1a2e"/><rect x="26" y="24" width="2" height="10" fill="#1a1a2e"/><rect x="10" y="28" width="16" height="3" fill="#e94560"/></svg>`,
+    Rey: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="10" y="2" width="16" height="6" fill="#f0c040"/><rect x="10" y="0" width="2" height="2" fill="#f0c040"/><rect x="15" y="0" width="2" height="2" fill="#f0c040"/><rect x="20" y="0" width="2" height="2" fill="#f0c040"/><rect x="25" y="0" width="2" height="2" fill="#f0c040"/><rect x="12" y="4" width="2" height="2" fill="#c0002a"/><rect x="22" y="4" width="2" height="2" fill="#3b82f6"/><rect x="10" y="8" width="16" height="12" fill="#f5c99a"/><rect x="12" y="11" width="2" height="2" fill="#1a1a2e"/><rect x="22" y="11" width="2" height="2" fill="#1a1a2e"/><rect x="8" y="14" width="2" height="8" fill="#e2e8f0"/><rect x="26" y="14" width="2" height="8" fill="#e2e8f0"/><rect x="10" y="16" width="16" height="6" fill="#e2e8f0"/><rect x="8" y="22" width="20" height="14" fill="#c0002a"/><rect x="12" y="22" width="12" height="14" fill="#f0c040"/><rect x="12" y="22" width="3" height="14" fill="#e2e8f0"/><rect x="21" y="22" width="3" height="14" fill="#e2e8f0"/></svg>`,
+    Bruja: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="16" y="0" width="4" height="4" fill="#1a1a2e"/><rect x="14" y="4" width="8" height="4" fill="#1a1a2e"/><rect x="12" y="8" width="12" height="4" fill="#1a1a2e"/><rect x="10" y="12" width="16" height="4" fill="#1a1a2e"/><rect x="10" y="14" width="16" height="2" fill="#7c3aed"/><rect x="6" y="16" width="24" height="2" fill="#1a1a2e"/><rect x="8" y="18" width="20" height="10" fill="#7c3aed"/><rect x="10" y="18" width="16" height="10" fill="#22c55e"/><rect x="12" y="20" width="2" height="2" fill="#fbbf24"/><rect x="22" y="20" width="2" height="2" fill="#fbbf24"/><rect x="10" y="28" width="16" height="8" fill="#1a1a2e"/><rect x="2" y="32" width="32" height="2" fill="#b45309"/><rect x="30" y="30" width="4" height="6" fill="#fbbf24"/></svg>`,
+    Robot: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="17" y="0" width="2" height="6" fill="#94a3b8"/><rect x="16" y="0" width="4" height="2" fill="#fbbf24"/><rect x="8" y="6" width="20" height="18" fill="#60a5fa"/><rect x="6" y="10" width="2" height="10" fill="#94a3b8"/><rect x="28" y="10" width="2" height="10" fill="#94a3b8"/><rect x="11" y="11" width="4" height="4" fill="#fbbf24"/><rect x="21" y="11" width="4" height="4" fill="#fbbf24"/><rect x="12" y="18" width="12" height="3" fill="#94a3b8"/><rect x="14" y="19" width="8" height="1" fill="#1a1a2e"/><rect x="15" y="24" width="6" height="2" fill="#94a3b8"/><rect x="8" y="26" width="20" height="10" fill="#60a5fa"/><rect x="12" y="29" width="12" height="4" fill="#94a3b8"/></svg>`,
+    Fantasma: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="12" y="4" width="12" height="4" fill="#e2e8f0"/><rect x="10" y="8" width="16" height="4" fill="#e2e8f0"/><rect x="8" y="12" width="20" height="16" fill="#e2e8f0"/><rect x="8" y="20" width="2" height="12" fill="#93c5fd"/><rect x="13" y="12" width="3" height="5" fill="#1a1a2e"/><rect x="20" y="13" width="3" height="5" fill="#1a1a2e"/><rect x="13" y="13" width="1" height="1" fill="#ffffff"/><rect x="20" y="14" width="1" height="1" fill="#ffffff"/><rect x="8" y="28" width="4" height="4" fill="#e2e8f0"/><rect x="16" y="28" width="4" height="4" fill="#e2e8f0"/><rect x="24" y="28" width="4" height="4" fill="#e2e8f0"/><rect x="12" y="28" width="4" height="2" fill="#93c5fd"/><rect x="20" y="28" width="4" height="2" fill="#93c5fd"/></svg>`,
+    Dragon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="8" y="2" width="4" height="6" fill="#f97316"/><rect x="24" y="2" width="4" height="6" fill="#f97316"/><rect x="16" y="4" width="4" height="4" fill="#fbbf24"/><rect x="10" y="8" width="16" height="14" fill="#16a34a"/><rect x="12" y="11" width="3" height="3" fill="#fbbf24"/><rect x="13" y="12" width="1" height="1" fill="#000000"/><rect x="21" y="11" width="3" height="3" fill="#fbbf24"/><rect x="22" y="12" width="1" height="1" fill="#000000"/><rect x="8" y="16" width="20" height="12" fill="#16a34a"/><rect x="10" y="22" width="16" height="2" fill="#fbbf24"/><rect x="11" y="18" width="2" height="2" fill="#0b5325"/><rect x="23" y="18" width="2" height="2" fill="#0b5325"/></svg>`,
+    Vampiro: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="10" y="4" width="16" height="6" fill="#1a1a2e"/><rect x="16" y="10" width="4" height="2" fill="#1a1a2e"/><rect x="8" y="6" width="2" height="6" fill="#1a1a2e"/><rect x="26" y="6" width="2" height="6" fill="#1a1a2e"/><rect x="10" y="10" width="16" height="12" fill="#f5c99a"/><rect x="12" y="12" width="2" height="2" fill="#e94560"/><rect x="22" y="12" width="2" height="2" fill="#e94560"/><rect x="14" y="17" width="8" height="2" fill="#1a1a2e"/><rect x="15" y="18" width="1" height="2" fill="#ffffff"/><rect x="20" y="18" width="1" height="2" fill="#ffffff"/><rect x="6" y="20" width="4" height="8" fill="#e94560"/><rect x="26" y="20" width="4" height="8" fill="#e94560"/><rect x="10" y="22" width="16" height="14" fill="#1a1a2e"/><rect x="14" y="22" width="8" height="14" fill="#e94560"/></svg>`,
+    Arquero: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="10" y="2" width="16" height="8" fill="#15803d"/><rect x="8" y="6" width="20" height="6" fill="#15803d"/><rect x="22" y="0" width="2" height="4" fill="#e94560"/><rect x="10" y="10" width="16" height="10" fill="#f5c99a"/><rect x="12" y="12" width="2" height="2" fill="#92400e"/><rect x="22" y="12" width="2" height="2" fill="#92400e"/><rect x="10" y="20" width="16" height="16" fill="#15803d"/><rect x="30" y="4" width="2" height="28" fill="#92400e"/><rect x="28" y="4" width="2" height="2" fill="#92400e"/><rect x="28" y="30" width="2" height="2" fill="#92400e"/><rect x="10" y="24" width="16" height="2" fill="#92400e"/></svg>`,
+    Esqueleto: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="10" y="4" width="16" height="14" fill="#e7e5e4"/><rect x="8" y="6" width="2" height="10" fill="#a8a29e"/><rect x="26" y="6" width="2" height="10" fill="#a8a29e"/><rect x="12" y="9" width="4" height="4" fill="#1a1a2e"/><rect x="20" y="9" width="4" height="4" fill="#1a1a2e"/><rect x="17" y="13" width="2" height="2" fill="#1a1a2e"/><rect x="12" y="18" width="12" height="4" fill="#e7e5e4"/><rect x="14" y="19" width="1" height="2" fill="#1a1a2e"/><rect x="18" y="19" width="1" height="2" fill="#1a1a2e"/><rect x="21" y="19" width="1" height="2" fill="#1a1a2e"/><rect x="17" y="22" width="2" height="14" fill="#e7e5e4"/><rect x="10" y="25" width="16" height="2" fill="#e7e5e4"/><rect x="12" y="29" width="12" height="2" fill="#e7e5e4"/><rect x="14" y="33" width="8" height="2" fill="#e7e5e4"/></svg>`
+  },
+  amigos: {
+    Oscar: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%"><rect x="10" y="3" width="16" height="11" fill="#1a1a2e"/><rect x="8" y="5" width="20" height="7" fill="#1a1a2e"/><rect x="7" y="7" width="22" height="4" fill="#1a1a2e"/><rect x="15" y="25" width="6" height="4" fill="#f5c99a"/><rect x="9" y="14" width="18" height="3" fill="#f5c99a"/><rect x="11" y="10" width="14" height="15" fill="#f5c99a"/><rect x="10" y="12" width="16" height="11" fill="#f5c99a"/><rect x="13" y="13" width="3" height="1" fill="#1a1a2e"/><rect x="20" y="13" width="3" height="1" fill="#1a1a2e"/><rect x="14" y="12" width="1" height="1" fill="#1a1a2e"/><rect x="21" y="12" width="1" height="1" fill="#1a1a2e"/><rect x="13" y="18" width="10" height="4" fill="#1a1a2e"/><rect x="14" y="19" width="8" height="2" fill="#ffffff"/><rect x="12" y="18" width="1" height="2" fill="#1a1a2e"/><rect x="23" y="18" width="1" height="2" fill="#1a1a2e"/><rect x="7" y="29" width="22" height="7" fill="#3b82f6"/><rect x="10" y="28" width="16" height="1" fill="#3b82f6"/></svg>`,
+    Carlos: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%"><rect x="11" y="5" width="14" height="6" fill="#6B3F1A"/><rect x="10" y="7" width="16" height="8" fill="#6B3F1A"/><rect x="15" y="25" width="6" height="4" fill="#f5c99a"/><rect x="11" y="10" width="14" height="15" fill="#f5c99a"/><rect x="12" y="13" width="5" height="4" fill="#1a1a2e"/><rect x="19" y="13" width="5" height="4" fill="#1a1a2e"/><rect x="17" y="14" width="2" height="1" fill="#1a1a2e"/><rect x="13" y="14" width="3" height="2" fill="#93c5fd" fill-opacity="0.3"/><rect x="20" y="14" width="3" height="2" fill="#93c5fd" fill-opacity="0.3"/><rect x="14" y="14" width="1" height="1" fill="#1a1a2e"/><rect x="21" y="14" width="1" height="1" fill="#1a1a2e"/><rect x="16" y="20" width="4" height="1" fill="#1a1a2e"/><rect x="15" y="19" width="6" height="1" fill="#6B3F1A"/><rect x="15" y="21" width="6" height="4" fill="#6B3F1A"/><rect x="17" y="21" width="2" height="2" fill="#f5c99a"/><rect x="7" y="29" width="22" height="7" fill="#3b82f6"/><rect x="10" y="28" width="16" height="1" fill="#3b82f6"/></svg>`,
+    Marcos: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%"><rect x="11" y="4" width="14" height="5" fill="#6B3F1A"/><rect x="9" y="7" width="18" height="24" fill="#6B3F1A"/><rect x="15" y="25" width="6" height="4" fill="#f5c99a"/><rect x="11" y="9" width="14" height="16" fill="#f5c99a"/><rect x="13" y="12" width="2" height="1" fill="#1a1a2e"/><rect x="21" y="12" width="2" height="1" fill="#1a1a2e"/><rect x="13" y="14" width="2" height="2" fill="#1a1a2e"/><rect x="21" y="14" width="2" height="2" fill="#1a1a2e"/><rect x="14" y="14" width="1" height="1" fill="#ffffff"/><rect x="22" y="14" width="1" height="1" fill="#ffffff"/><rect x="16" y="21" width="4" height="1" fill="#1a1a2e"/><rect x="7" y="29" width="22" height="7" fill="#6b7280"/><rect x="10" y="28" width="16" height="1" fill="#6b7280"/></svg>`,
+    Mateo: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%"><rect x="11" y="7" width="14" height="3" fill="#1a1a2e"/><rect x="10" y="8" width="16" height="3" fill="#1a1a2e"/><rect x="15" y="25" width="6" height="4" fill="#f5c99a"/><rect x="11" y="10" width="14" height="15" fill="#f5c99a"/><rect x="10" y="13" width="16" height="9" fill="#f5c99a"/><rect x="13" y="13" width="2" height="1" fill="#1a1a2e"/><rect x="21" y="13" width="2" height="1" fill="#1a1a2e"/><rect x="13" y="15" width="2" height="2" fill="#1a1a2e"/><rect x="21" y="15" width="2" height="2" fill="#1a1a2e"/><rect x="15" y="21" width="6" height="1" fill="#1a1a2e"/><rect x="7" y="29" width="22" height="7" fill="#991b1b"/><rect x="10" y="28" width="16" height="1" fill="#991b1b"/></svg>`,
+    Gus: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%"><rect x="10" y="3" width="16" height="11" fill="#f97316"/><rect x="8" y="5" width="20" height="8" fill="#f97316"/><rect x="7" y="7" width="22" height="5" fill="#f97316"/><rect x="15" y="25" width="6" height="4" fill="#f5c99a"/><rect x="11" y="11" width="14" height="14" fill="#f5c99a"/><rect x="12" y="13" width="5" height="4" fill="#1a1a2e"/><rect x="19" y="13" width="5" height="4" fill="#1a1a2e"/><rect x="17" y="14" width="2" height="1" fill="#1a1a2e"/><rect x="13" y="14" width="3" height="2" fill="#93c5fd" fill-opacity="0.3"/><rect x="20" y="14" width="3" height="2" fill="#93c5fd" fill-opacity="0.3"/><rect x="14" y="14" width="1" height="1" fill="#1a1a2e"/><rect x="21" y="14" width="1" height="1" fill="#1a1a2e"/><rect x="15" y="19" width="6" height="1" fill="#f97316"/><rect x="16" y="20" width="4" height="1" fill="#1a1a2e"/><rect x="15" y="21" width="6" height="4" fill="#f97316"/><rect x="17" y="21" width="2" height="2" fill="#f5c99a"/><rect x="7" y="29" width="22" height="7" fill="#ea580c"/><rect x="10" y="28" width="16" height="1" fill="#ea580c"/></svg>`,
+    Adri: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%"><rect x="11" y="6" width="14" height="5" fill="#1a1a2e"/><rect x="10" y="8" width="16" height="4" fill="#1a1a2e"/><rect x="15" y="25" width="6" height="4" fill="#f5c99a"/><rect x="11" y="10" width="14" height="15" fill="#f5c99a"/><rect x="10" y="13" width="16" height="9" fill="#f5c99a"/><rect x="13" y="13" width="2" height="1" fill="#1a1a2e"/><rect x="21" y="13" width="2" height="1" fill="#1a1a2e"/><rect x="13" y="15" width="2" height="2" fill="#1a1a2e"/><rect x="21" y="15" width="2" height="2" fill="#1a1a2e"/><rect x="15" y="20" width="6" height="1" fill="#1a1a2e"/><rect x="16" y="21" width="4" height="1" fill="#f5c99a"/><rect x="16" y="22" width="4" height="3" fill="#1a1a2e"/><rect x="17" y="22" width="2" height="1" fill="#f5c99a"/><rect x="7" y="29" width="22" height="7" fill="#4b5563"/><rect x="10" y="28" width="16" height="1" fill="#4b5563"/></svg>`
+  }
+};
+
+let miAvatar = null;
+
+function inicializarPantallaAvatar() {
+  const gridPersonajes = document.getElementById('avatar-grid-personajes');
+  const gridAmigos     = document.getElementById('avatar-grid-amigos');
+
+  function crearItem(nombre, svg, grupo) {
+    const div = document.createElement('div');
+    div.className = 'avatar-item';
+    div.dataset.nombre = nombre;
+    div.dataset.grupo  = grupo;
+    div.innerHTML = `${svg}<span>${nombre}</span>`;
+    div.addEventListener('click', () => {
+      document.querySelectorAll('.avatar-item').forEach(el => el.classList.remove('seleccionado'));
+      div.classList.add('seleccionado');
+      miAvatar = { nombre, svg };
+      document.getElementById('btn-confirmar-avatar').disabled = false;
+    });
+    return div;
+  }
+
+  Object.entries(AVATARES.personajes).forEach(([nombre, svg]) => {
+    gridPersonajes.appendChild(crearItem(nombre, svg, 'personajes'));
+  });
+  Object.entries(AVATARES.amigos).forEach(([nombre, svg]) => {
+    gridAmigos.appendChild(crearItem(nombre, svg, 'amigos'));
+  });
+}
+
+document.getElementById('btn-confirmar-avatar').addEventListener('click', () => {
+  if (!miAvatar) return;
+  // Guardar avatar y pasar al flujo normal (crear o unirse)
+  sessionStorage.setItem('cincoVidasAvatar', JSON.stringify(miAvatar));
+  const accion = sessionStorage.getItem('cincoVidasAccion');
+  if (accion === 'crear') {
+    ejecutarCrearSala();
+  } else {
+    ejecutarUnirse();
+  }
+});
+
+// Llamar al inicializar
+inicializarPantallaAvatar();
 const PALOS_SVG = {
   oros: () => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%">
   <circle cx="18" cy="18" r="14" stroke="currentColor" stroke-width="1.6" fill="none" />
@@ -526,7 +595,11 @@ function renderizarSala(sala) {
   lista.innerHTML = '';
   sala.jugadores.forEach(j => {
     const li = document.createElement('li');
-    li.textContent = j.nickname;
+    const avatarSvg = j.avatar ? (AVATARES.personajes[j.avatar] || AVATARES.amigos[j.avatar] || '') : '';
+    li.innerHTML = `
+      ${avatarSvg ? `<span class="avatar-mini">${avatarSvg}</span>` : ''}
+      <span class="nombre">${j.nickname}</span>
+    `;
     if (j.id === sala.creador) {
       const corona = document.createElement('span');
       corona.className = 'corona';
@@ -549,14 +622,34 @@ function renderizarSala(sala) {
 }
 
 // ── BOTONES LOBBY ─────────────────────────────
-$('btn-crear').addEventListener('click', () => {
+function ejecutarCrearSala() {
   const nickname = $('input-nickname').value.trim();
-  if (nickname.length < 2) return mostrarError('Nickname demasiado corto');
-  socket.emit('crearSala', { nickname, token: obtenerToken() }, res => {
-    if (res.error) return mostrarError(res.error);
+  const avatarData = sessionStorage.getItem('cincoVidasAvatar');
+  socket.emit('crearSala', { nickname, token: obtenerToken(), avatar: avatarData ? JSON.parse(avatarData).nombre : null }, res => {
+    if (res.error) { irA('entrada'); return mostrarError(res.error); }
+    miSala = res.sala;
     renderizarSala(res.sala);
     irA('sala');
   });
+}
+
+function ejecutarUnirse() {
+  const nickname = $('input-nickname').value.trim();
+  const codigo   = $('input-codigo').value.trim().toUpperCase();
+  const avatarData = sessionStorage.getItem('cincoVidasAvatar');
+  socket.emit('unirseASala', { nickname, codigo, token: obtenerToken(), avatar: avatarData ? JSON.parse(avatarData).nombre : null }, res => {
+    if (res.error) { irA('entrada'); return mostrarError(res.error); }
+    miSala = res.sala;
+    renderizarSala(res.sala);
+    irA('sala');
+  });
+}
+
+$('btn-crear').addEventListener('click', () => {
+  const nickname = $('input-nickname').value.trim();
+  if (nickname.length < 2) return mostrarError('Nickname demasiado corto');
+  sessionStorage.setItem('cincoVidasAccion', 'crear');
+  irA('avatar');
 });
 
 $('btn-unirse-form').addEventListener('click', () => {
@@ -568,11 +661,8 @@ $('btn-unirse').addEventListener('click', () => {
   const codigo   = $('input-codigo').value.trim().toUpperCase();
   if (nickname.length < 2) return mostrarError('Nickname demasiado corto');
   if (codigo.length !== 4) return mostrarError('El código tiene 4 letras');
-  socket.emit('unirseASala', { nickname, codigo, token: obtenerToken() }, res => {
-    if (res.error) return mostrarError(res.error);
-    renderizarSala(res.sala);
-    irA('sala');
-  });
+  sessionStorage.setItem('cincoVidasAccion', 'unirse');
+  irA('avatar');
 });
 
 // Selector de modalidad
