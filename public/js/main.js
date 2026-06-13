@@ -38,7 +38,6 @@ function obtenerToken() {
 
 // ── AVATARES ─────────────────────────────────
 const AVATARES = {
-  personajes: {
     Caballero: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="16" y="0" width="4" height="4" fill="#ef4444"/><rect x="18" y="2" width="4" height="2" fill="#ef4444"/><rect x="8" y="4" width="20" height="12" fill="#b0b8c8"/><rect x="6" y="8" width="2" height="6" fill="#7a8494"/><rect x="28" y="8" width="2" height="6" fill="#7a8494"/><rect x="10" y="8" width="16" height="4" fill="#475569"/><rect x="12" y="10" width="2" height="1" fill="#1e293b"/><rect x="22" y="10" width="2" height="1" fill="#1e293b"/><rect x="8" y="16" width="20" height="16" fill="#b0b8c8"/><rect x="6" y="18" width="2" height="12" fill="#7a8494"/><rect x="28" y="18" width="2" height="12" fill="#7a8494"/><rect x="6" y="16" width="6" height="4" fill="#7a8494"/><rect x="24" y="16" width="6" height="4" fill="#7a8494"/><rect x="16" y="20" width="4" height="6" fill="#7a8494"/></svg>`,
     Mago: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="16" y="0" width="4" height="4" fill="#7c3aed"/><rect x="14" y="4" width="8" height="4" fill="#7c3aed"/><rect x="12" y="8" width="12" height="4" fill="#7c3aed"/><rect x="16" y="8" width="4" height="2" fill="#fbbf24"/><rect x="10" y="12" width="16" height="4" fill="#7c3aed"/><rect x="6" y="16" width="24" height="2" fill="#fbbf24"/><rect x="10" y="18" width="16" height="6" fill="#f5c99a"/><rect x="12" y="19" width="2" height="2" fill="#1a1a2e"/><rect x="22" y="19" width="2" height="2" fill="#1a1a2e"/><rect x="12" y="22" width="12" height="6" fill="#e2e8f0"/><rect x="8" y="24" width="4" height="12" fill="#3b82f6"/><rect x="24" y="24" width="4" height="12" fill="#3b82f6"/><rect x="12" y="26" width="12" height="10" fill="#7c3aed"/></svg>`,
     Pirata: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="8" y="2" width="20" height="4" fill="#1a1a2e"/><rect x="6" y="6" width="24" height="4" fill="#1a1a2e"/><rect x="10" y="10" width="16" height="2" fill="#e94560"/><rect x="10" y="12" width="16" height="10" fill="#f5c99a"/><rect x="10" y="14" width="16" height="1" fill="#1a1a2e"/><rect x="13" y="13" width="4" height="4" fill="#1a1a2e"/><rect x="21" y="14" width="2" height="2" fill="#1a1a2e"/><rect x="10" y="20" width="16" height="4" fill="#4a3728"/><rect x="10" y="24" width="16" height="12" fill="#e94560"/><rect x="14" y="24" width="8" height="12" fill="#1a1a2e"/></svg>`,
@@ -51,29 +50,28 @@ const AVATARES = {
     Vampiro: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="10" y="4" width="16" height="6" fill="#1a1a2e"/><rect x="16" y="10" width="4" height="2" fill="#1a1a2e"/><rect x="8" y="6" width="2" height="6" fill="#1a1a2e"/><rect x="26" y="6" width="2" height="6" fill="#1a1a2e"/><rect x="10" y="10" width="16" height="12" fill="#f5c99a"/><rect x="12" y="12" width="2" height="2" fill="#e94560"/><rect x="22" y="12" width="2" height="2" fill="#e94560"/><rect x="14" y="17" width="8" height="2" fill="#1a1a2e"/><rect x="15" y="18" width="1" height="2" fill="#ffffff"/><rect x="20" y="18" width="1" height="2" fill="#ffffff"/><rect x="6" y="20" width="4" height="8" fill="#e94560"/><rect x="26" y="20" width="4" height="8" fill="#e94560"/><rect x="10" y="22" width="16" height="14" fill="#1a1a2e"/><rect x="14" y="22" width="8" height="14" fill="#e94560"/></svg>`,
     Arquero: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="10" y="2" width="16" height="8" fill="#15803d"/><rect x="8" y="6" width="20" height="6" fill="#15803d"/><rect x="22" y="0" width="2" height="4" fill="#e94560"/><rect x="10" y="10" width="16" height="10" fill="#f5c99a"/><rect x="12" y="12" width="2" height="2" fill="#92400e"/><rect x="22" y="12" width="2" height="2" fill="#92400e"/><rect x="10" y="20" width="16" height="16" fill="#15803d"/><rect x="30" y="4" width="2" height="28" fill="#92400e"/><rect x="28" y="4" width="2" height="2" fill="#92400e"/><rect x="28" y="30" width="2" height="2" fill="#92400e"/><rect x="10" y="24" width="16" height="2" fill="#92400e"/></svg>`,
     Esqueleto: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" style="shape-rendering:crispEdges"><rect x="10" y="4" width="16" height="14" fill="#e7e5e4"/><rect x="8" y="6" width="2" height="10" fill="#a8a29e"/><rect x="26" y="6" width="2" height="10" fill="#a8a29e"/><rect x="12" y="9" width="4" height="4" fill="#1a1a2e"/><rect x="20" y="9" width="4" height="4" fill="#1a1a2e"/><rect x="17" y="13" width="2" height="2" fill="#1a1a2e"/><rect x="12" y="18" width="12" height="4" fill="#e7e5e4"/><rect x="14" y="19" width="1" height="2" fill="#1a1a2e"/><rect x="18" y="19" width="1" height="2" fill="#1a1a2e"/><rect x="21" y="19" width="1" height="2" fill="#1a1a2e"/><rect x="17" y="22" width="2" height="14" fill="#e7e5e4"/><rect x="10" y="25" width="16" height="2" fill="#e7e5e4"/><rect x="12" y="29" width="12" height="2" fill="#e7e5e4"/><rect x="14" y="33" width="8" height="2" fill="#e7e5e4"/></svg>`
-  },
-  amigos: {
+,
     Oscar: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%"><rect x="10" y="3" width="16" height="11" fill="#1a1a2e"/><rect x="8" y="5" width="20" height="7" fill="#1a1a2e"/><rect x="7" y="7" width="22" height="4" fill="#1a1a2e"/><rect x="15" y="25" width="6" height="4" fill="#f5c99a"/><rect x="9" y="14" width="18" height="3" fill="#f5c99a"/><rect x="11" y="10" width="14" height="15" fill="#f5c99a"/><rect x="10" y="12" width="16" height="11" fill="#f5c99a"/><rect x="13" y="13" width="3" height="1" fill="#1a1a2e"/><rect x="20" y="13" width="3" height="1" fill="#1a1a2e"/><rect x="14" y="12" width="1" height="1" fill="#1a1a2e"/><rect x="21" y="12" width="1" height="1" fill="#1a1a2e"/><rect x="13" y="18" width="10" height="4" fill="#1a1a2e"/><rect x="14" y="19" width="8" height="2" fill="#ffffff"/><rect x="12" y="18" width="1" height="2" fill="#1a1a2e"/><rect x="23" y="18" width="1" height="2" fill="#1a1a2e"/><rect x="7" y="29" width="22" height="7" fill="#3b82f6"/><rect x="10" y="28" width="16" height="1" fill="#3b82f6"/></svg>`,
     Carlos: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%"><rect x="11" y="5" width="14" height="6" fill="#6B3F1A"/><rect x="10" y="7" width="16" height="8" fill="#6B3F1A"/><rect x="15" y="25" width="6" height="4" fill="#f5c99a"/><rect x="11" y="10" width="14" height="15" fill="#f5c99a"/><rect x="12" y="13" width="5" height="4" fill="#1a1a2e"/><rect x="19" y="13" width="5" height="4" fill="#1a1a2e"/><rect x="17" y="14" width="2" height="1" fill="#1a1a2e"/><rect x="13" y="14" width="3" height="2" fill="#93c5fd" fill-opacity="0.3"/><rect x="20" y="14" width="3" height="2" fill="#93c5fd" fill-opacity="0.3"/><rect x="14" y="14" width="1" height="1" fill="#1a1a2e"/><rect x="21" y="14" width="1" height="1" fill="#1a1a2e"/><rect x="16" y="20" width="4" height="1" fill="#1a1a2e"/><rect x="15" y="19" width="6" height="1" fill="#6B3F1A"/><rect x="15" y="21" width="6" height="4" fill="#6B3F1A"/><rect x="17" y="21" width="2" height="2" fill="#f5c99a"/><rect x="7" y="29" width="22" height="7" fill="#3b82f6"/><rect x="10" y="28" width="16" height="1" fill="#3b82f6"/></svg>`,
     Marcos: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%"><rect x="11" y="4" width="14" height="5" fill="#6B3F1A"/><rect x="9" y="7" width="18" height="24" fill="#6B3F1A"/><rect x="15" y="25" width="6" height="4" fill="#f5c99a"/><rect x="11" y="9" width="14" height="16" fill="#f5c99a"/><rect x="13" y="12" width="2" height="1" fill="#1a1a2e"/><rect x="21" y="12" width="2" height="1" fill="#1a1a2e"/><rect x="13" y="14" width="2" height="2" fill="#1a1a2e"/><rect x="21" y="14" width="2" height="2" fill="#1a1a2e"/><rect x="14" y="14" width="1" height="1" fill="#ffffff"/><rect x="22" y="14" width="1" height="1" fill="#ffffff"/><rect x="16" y="21" width="4" height="1" fill="#1a1a2e"/><rect x="7" y="29" width="22" height="7" fill="#6b7280"/><rect x="10" y="28" width="16" height="1" fill="#6b7280"/></svg>`,
     Mateo: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%"><rect x="11" y="7" width="14" height="3" fill="#1a1a2e"/><rect x="10" y="8" width="16" height="3" fill="#1a1a2e"/><rect x="15" y="25" width="6" height="4" fill="#f5c99a"/><rect x="11" y="10" width="14" height="15" fill="#f5c99a"/><rect x="10" y="13" width="16" height="9" fill="#f5c99a"/><rect x="13" y="13" width="2" height="1" fill="#1a1a2e"/><rect x="21" y="13" width="2" height="1" fill="#1a1a2e"/><rect x="13" y="15" width="2" height="2" fill="#1a1a2e"/><rect x="21" y="15" width="2" height="2" fill="#1a1a2e"/><rect x="15" y="21" width="6" height="1" fill="#1a1a2e"/><rect x="7" y="29" width="22" height="7" fill="#991b1b"/><rect x="10" y="28" width="16" height="1" fill="#991b1b"/></svg>`,
     Gus: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%"><rect x="10" y="3" width="16" height="11" fill="#f97316"/><rect x="8" y="5" width="20" height="8" fill="#f97316"/><rect x="7" y="7" width="22" height="5" fill="#f97316"/><rect x="15" y="25" width="6" height="4" fill="#f5c99a"/><rect x="11" y="11" width="14" height="14" fill="#f5c99a"/><rect x="12" y="13" width="5" height="4" fill="#1a1a2e"/><rect x="19" y="13" width="5" height="4" fill="#1a1a2e"/><rect x="17" y="14" width="2" height="1" fill="#1a1a2e"/><rect x="13" y="14" width="3" height="2" fill="#93c5fd" fill-opacity="0.3"/><rect x="20" y="14" width="3" height="2" fill="#93c5fd" fill-opacity="0.3"/><rect x="14" y="14" width="1" height="1" fill="#1a1a2e"/><rect x="21" y="14" width="1" height="1" fill="#1a1a2e"/><rect x="15" y="19" width="6" height="1" fill="#f97316"/><rect x="16" y="20" width="4" height="1" fill="#1a1a2e"/><rect x="15" y="21" width="6" height="4" fill="#f97316"/><rect x="17" y="21" width="2" height="2" fill="#f5c99a"/><rect x="7" y="29" width="22" height="7" fill="#ea580c"/><rect x="10" y="28" width="16" height="1" fill="#ea580c"/></svg>`,
     Adri: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%"><rect x="11" y="6" width="14" height="5" fill="#1a1a2e"/><rect x="10" y="8" width="16" height="4" fill="#1a1a2e"/><rect x="15" y="25" width="6" height="4" fill="#f5c99a"/><rect x="11" y="10" width="14" height="15" fill="#f5c99a"/><rect x="10" y="13" width="16" height="9" fill="#f5c99a"/><rect x="13" y="13" width="2" height="1" fill="#1a1a2e"/><rect x="21" y="13" width="2" height="1" fill="#1a1a2e"/><rect x="13" y="15" width="2" height="2" fill="#1a1a2e"/><rect x="21" y="15" width="2" height="2" fill="#1a1a2e"/><rect x="15" y="20" width="6" height="1" fill="#1a1a2e"/><rect x="16" y="21" width="4" height="1" fill="#f5c99a"/><rect x="16" y="22" width="4" height="3" fill="#1a1a2e"/><rect x="17" y="22" width="2" height="1" fill="#f5c99a"/><rect x="7" y="29" width="22" height="7" fill="#4b5563"/><rect x="10" y="28" width="16" height="1" fill="#4b5563"/></svg>`,
-    Maria: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%" shape-rendering="crispEdges"><rect x="8" y="4" width="20" height="4" fill="#F4D03F"/><rect x="6" y="8" width="24" height="6" fill="#F4D03F"/><rect x="6" y="14" width="4" height="12" fill="#F4D03F"/><rect x="26" y="14" width="4" height="12" fill="#F4D03F"/><rect x="16" y="6" width="4" height="2" fill="#F7DC6F"/><rect x="10" y="8" width="16" height="16" fill="#FEDCBA"/><rect x="15" y="24" width="6" height="3" fill="#FEDCBA"/><rect x="13" y="14" width="3" height="3" fill="#ffffff"/><rect x="13" y="14" width="2" height="2" fill="#2ECC71"/><rect x="20" y="14" width="3" height="3" fill="#ffffff"/><rect x="20" y="14" width="2" height="2" fill="#2ECC71"/><rect x="13" y="13" width="3" height="1" fill="#424949"/><rect x="20" y="13" width="3" height="1" fill="#424949"/><rect x="17" y="18" width="2" height="2" fill="#E0C0A0"/><rect x="16" y="21" width="4" height="1" fill="#E74C3C"/><rect x="9" y="27" width="18" height="6" fill="#F1948A"/><rect x="11" y="26" width="14" height="1" fill="#F1948A"/></svg>`
-  }
+    Maria: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%" shape-rendering="crispEdges"><rect x="8" y="4" width="20" height="4" fill="#F4D03F"/><rect x="6" y="8" width="24" height="6" fill="#F4D03F"/><rect x="6" y="14" width="4" height="12" fill="#F4D03F"/><rect x="26" y="14" width="4" height="12" fill="#F4D03F"/><rect x="16" y="6" width="4" height="2" fill="#F7DC6F"/><rect x="10" y="8" width="16" height="16" fill="#FEDCBA"/><rect x="15" y="24" width="6" height="3" fill="#FEDCBA"/><rect x="13" y="14" width="3" height="3" fill="#ffffff"/><rect x="13" y="14" width="2" height="2" fill="#2ECC71"/><rect x="20" y="14" width="3" height="3" fill="#ffffff"/><rect x="20" y="14" width="2" height="2" fill="#2ECC71"/><rect x="13" y="13" width="3" height="1" fill="#424949"/><rect x="20" y="13" width="3" height="1" fill="#424949"/><rect x="17" y="18" width="2" height="2" fill="#E0C0A0"/><rect x="16" y="21" width="4" height="1" fill="#E74C3C"/><rect x="9" y="27" width="18" height="6" fill="#F1948A"/><rect x="11" y="26" width="14" height="1" fill="#F1948A"/></svg>`,
+    Bombera: `<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="bombera"><rect x="14" y="2" width="8" height="2" fill="#e94560"/><rect x="12" y="4" width="12" height="4" fill="#e94560"/><rect x="10" y="8" width="16" height="2" fill="#e94560"/><rect x="8" y="10" width="20" height="2" fill="#1a1a2e"/><rect x="10" y="12" width="16" height="8" fill="#f5c99a"/><rect x="12" y="14" width="2" height="2" fill="#1a1a2e"/><rect x="22" y="14" width="2" height="2" fill="#1a1a2e"/><rect x="16" y="18" width="4" height="2" fill="#1a1a2e"/><rect x="8" y="12" width="2" height="6" fill="#1a1a2e"/><rect x="26" y="12" width="2" height="6" fill="#1a1a2e"/><rect x="10" y="20" width="16" height="10" fill="#1a1a2e"/><rect x="12" y="20" width="2" height="10" fill="#e94560"/><rect x="22" y="20" width="2" height="10" fill="#e94560"/><rect x="14" y="24" width="8" height="2" fill="#e94560"/></g></svg>`,
+    Superwoman: `<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="superheroina"><rect x="8" y="4" width="20" height="2" fill="#1a1a2e"/><rect x="6" y="6" width="24" height="2" fill="#1a1a2e"/><rect x="6" y="8" width="6" height="16" fill="#1a1a2e"/><rect x="24" y="8" width="6" height="16" fill="#1a1a2e"/><rect x="8" y="24" width="4" height="4" fill="#1a1a2e"/><rect x="24" y="24" width="4" height="4" fill="#1a1a2e"/><rect x="12" y="8" width="12" height="12" fill="#f5c99a"/><rect x="10" y="10" width="16" height="4" fill="#e94560"/><rect x="14" y="14" width="8" height="2" fill="#e94560"/><rect x="14" y="11" width="2" height="2" fill="#f0c040"/><rect x="20" y="11" width="2" height="2" fill="#f0c040"/><rect x="16" y="17" width="4" height="2" fill="#f0c040"/><rect x="10" y="20" width="16" height="10" fill="#e94560"/><rect x="14" y="22" width="8" height="6" fill="#f0c040"/><rect x="16" y="24" width="4" height="2" fill="#1a1a2e"/></g></svg>`,
+    Alien: `<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="alien"><rect x="10" y="4" width="16" height="2" fill="#22c55e"/><rect x="8" y="6" width="20" height="4" fill="#22c55e"/><rect x="6" y="10" width="24" height="8" fill="#22c55e"/><rect x="8" y="18" width="20" height="2" fill="#22c55e"/><rect x="12" y="20" width="12" height="2" fill="#22c55e"/><rect x="10" y="10" width="6" height="6" fill="#7c3aed"/><rect x="20" y="10" width="6" height="6" fill="#7c3aed"/><rect x="12" y="12" width="2" height="2" fill="#1a1a2e"/><rect x="22" y="12" width="2" height="2" fill="#1a1a2e"/><rect x="12" y="1" width="2" height="3" fill="#22c55e"/><rect x="22" y="1" width="2" height="3" fill="#22c55e"/><rect x="11" y="0" width="4" height="1" fill="#7c3aed"/><rect x="21" y="0" width="4" height="1" fill="#7c3aed"/><rect x="16" y="17" width="4" height="1" fill="#1a1a2e"/><rect x="10" y="22" width="16" height="10" fill="#1a1a2e"/><rect x="12" y="24" width="12" height="2" fill="#7c3aed"/><rect x="12" y="28" width="12" height="2" fill="#7c3aed"/></g></svg>`
 };
 
 let miAvatar = null;
 
 function inicializarPantallaAvatar() {
-  const gridPersonajes = document.getElementById('avatar-grid-personajes');
-  const gridAmigos     = document.getElementById('avatar-grid-amigos');
+  const grid = document.getElementById('avatar-grid-todos');
 
-  function crearItem(nombre, svg, grupo) {
+  function crearItem(nombre, svg) {
     const div = document.createElement('div');
     div.className = 'avatar-item';
     div.dataset.nombre = nombre;
-    div.dataset.grupo  = grupo;
     div.innerHTML = `${svg}<span>${nombre}</span>`;
     div.addEventListener('click', () => {
       document.querySelectorAll('.avatar-item').forEach(el => el.classList.remove('seleccionado'));
@@ -84,12 +82,14 @@ function inicializarPantallaAvatar() {
     return div;
   }
 
-  Object.entries(AVATARES.personajes).forEach(([nombre, svg]) => {
-    gridPersonajes.appendChild(crearItem(nombre, svg, 'personajes'));
+  Object.entries(AVATARES).forEach(([nombre, svg]) => {
+    grid.appendChild(crearItem(nombre, svg));
   });
-  Object.entries(AVATARES.amigos).forEach(([nombre, svg]) => {
-    gridAmigos.appendChild(crearItem(nombre, svg, 'amigos'));
-  });
+}
+
+// Helper: obtener el SVG de un avatar por nombre (estructura plana única)
+function obtenerAvatarSvg(nombre) {
+  return nombre ? (AVATARES[nombre] || '') : '';
 }
 
 document.getElementById('btn-confirmar-avatar').addEventListener('click', () => {
@@ -144,14 +144,16 @@ const PALO_COLOR = {
   oros:    '#8a6000',
   copas:   '#a0001e',
   espadas: '#0f3a7a',
-  bastos:  '#1a5c22'
+  bastos:  '#1a5c22',
+  joker:   '#7c3aed'
 };
 
 const PALO_BORDER = {
   oros:    'rgba(176,134,0,0.35)',
   copas:   'rgba(180,0,40,0.3)',
   espadas: 'rgba(30,80,150,0.3)',
-  bastos:  'rgba(30,110,40,0.3)'
+  bastos:  'rgba(30,110,40,0.3)',
+  joker:   'rgba(124,58,237,0.4)'
 };
 
 const REVERSO_SVG = `<svg viewBox="0 0 90 130" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
@@ -315,22 +317,36 @@ const FIGURA_ICONO = {
 </svg>`
 };
 
-function labelValor(v) { return NOMBRES_VALOR[v] || String(v); }
+function labelValor(v, palo) {
+  if (palo === 'joker') return '🃏';
+  return NOMBRES_VALOR[v] || String(v);
+}
+
+// Icono central para el Joker (Hardcore) — máscara estilizada
+const JOKER_ICONO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%">
+  <path d="M 18 4 C 10 4, 6 10, 6 16 C 6 24, 12 30, 12 30 L 12 24 L 16 28 L 18 24 L 20 28 L 24 24 L 24 30 C 24 30, 30 24, 30 16 C 30 10, 26 4, 18 4 Z"
+    stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" fill="currentColor" fill-opacity="0.12" />
+  <circle cx="13" cy="15" r="2" fill="currentColor" />
+  <circle cx="23" cy="15" r="2" fill="currentColor" />
+  <path d="M 13 21 Q 18 25, 23 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none" />
+  <circle cx="18" cy="3" r="1.5" fill="currentColor" opacity="0.7" />
+</svg>`;
 
 function crearCartaEl(carta, opts = {}) {
   const el = document.createElement('div');
 
-  const esAs     = carta.valor === 1;
-  const esFigura = carta.valor >= 10;
+  const esJoker  = carta.palo === 'joker';
+  const esAs     = !esJoker && carta.valor === 1;
+  const esFigura = !esJoker && carta.valor >= 10;
   const nombreFigura = { 12: 'rey', 11: 'caballo', 10: 'sota' }[carta.valor] || '';
-  const clasesEspeciales = esAs ? ' as' : (esFigura ? ` figura ${nombreFigura}` : '');
+  const clasesEspeciales = esJoker ? ' joker' : (esAs ? ' as' : (esFigura ? ` figura ${nombreFigura}` : ''));
   el.className = `carta ${carta.palo}${clasesEspeciales} ${opts.seleccionable ? 'seleccionable' : 'no-seleccionable'} carta-nueva`;
 
   const color = PALO_COLOR[carta.palo];
-  const val   = labelValor(carta.valor);
-  const icono = esFigura
-    ? FIGURA_ICONO[carta.valor] || ''
-    : PALOS_SVG[carta.palo]?.() || '';
+  const val   = labelValor(carta.valor, carta.palo);
+  const icono = esJoker
+    ? JOKER_ICONO
+    : (esFigura ? FIGURA_ICONO[carta.valor] || '' : PALOS_SVG[carta.palo]?.() || '');
 
   el.style.setProperty('color', color);
   el.innerHTML = `
@@ -378,7 +394,7 @@ function renderizarJuego(estado) {
   $('info-fase').textContent     = tradFase(estado.fase);
 
   const miAvatarNombre = miJugador.avatar;
-  const miAvatarSvg = miAvatarNombre ? (AVATARES.personajes[miAvatarNombre] || AVATARES.amigos[miAvatarNombre] || '') : '';
+  const miAvatarSvg = obtenerAvatarSvg(miAvatarNombre);
   const miNicknameEl = $('mi-nickname');
   miNicknameEl.innerHTML = miAvatarSvg
     ? `<span class="mi-avatar-inline">${miAvatarSvg}</span>${miJugador.nickname}`
@@ -405,7 +421,7 @@ function renderizarJuego(estado) {
     const div = document.createElement('div');
     div.className = `rival${esSuTurno ? ' turno-activo' : ''}`;
 
-    const avatarSvg = j.avatar ? (AVATARES.personajes[j.avatar] || AVATARES.amigos[j.avatar] || '') : '';
+    const avatarSvg = obtenerAvatarSvg(j.avatar);
 
     let cartaHtml = '';
     if ((soyEspectador || esRondaFinal) && j.mano && j.mano.length > 0) {
@@ -414,7 +430,7 @@ function renderizarJuego(estado) {
       const brd = PALO_BORDER[c.palo];
       const ico = PALOS_SVG[c.palo]?.() || '';
       cartaHtml = `<div class="carta-mini" style="border-color:${brd};color:${col}">
-        <span class="carta-mini-val" style="color:${col}">${labelValor(c.valor)}</span>
+        <span class="carta-mini-val" style="color:${col}">${labelValor(c.valor, c.palo)}</span>
         <div class="carta-mini-ico">${ico}</div>
       </div>`;
     }
@@ -426,6 +442,7 @@ function renderizarJuego(estado) {
       <span class="apuesta-rival">${j.apuesta !== null ? `Apostó: ${j.apuesta}` : '—'}</span>
       <span style="font-size:0.72rem;color:#4caf50">Bazas: ${j.bazasGanadas}/${j.apuesta !== null ? j.apuesta : '?'}</span>
       <span style="font-size:0.72rem;color:#aaa">${j.cartasEnMano} carta${j.cartasEnMano !== 1 ? 's' : ''}</span>
+      ${manaRivalHtml(j)}
       ${cartaHtml}
     `;
     rivalesEl.appendChild(div);
@@ -523,9 +540,15 @@ function renderizarJuego(estado) {
       : `⏳ Turno de ${activo?.nickname}`;
   } else if (estado.fase === 'resolucion') {
     msgJuego.textContent = '⚔️ Resolviendo la baza...';
+  } else if (estado.fase === 'duelo') {
+    msgJuego.textContent = '⚔️ Duelo del Prisionero en curso...';
   } else {
     msgJuego.textContent = '';
   }
+
+  // HARDCORE: barra de maná y escala invertida
+  actualizarBarraMana(estado);
+  actualizarEscalaInvertida(estado);
 }
 
 function tradFase(fase) {
@@ -556,6 +579,326 @@ function renderizarBotonesApuesta(estado) {
     btn.addEventListener('click', () => apostar(i));
     container.appendChild(btn);
   }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ── MODO HARDCORE ────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+
+const MANA_PARA_VIDA = 5;
+
+const LOGRO_ICONOS = {
+  ultimo_en_pie:      '🏔️',
+  pureza:             '🎨',
+  regicida:           '👑',
+  intocable:          '🛡️',
+  tercer_acto:        '🔁',
+  fantasma:           '👻',
+  filo_navaja:        '🔪',
+  cazador_ases:       '🎯',
+  caos_controlado:    '🃏',
+  vidente:            '🔮',
+  harmonia:           '🌈',
+  rey_detras_del_rey: '🏅',
+  reanimador:         '❤️‍🔥',
+  agonia:             '💔',
+  racha_perfecta:     '🔥',
+  lo_mas_bajo:        '🔃',
+  mentor:             '🎓',
+  indestructible:     '💎'
+};
+
+// ── BARRA DE MANÁ ──────────────────────────────────────────────────────────
+function actualizarBarraMana(estado) {
+  const esHardcore = estado.config?.hardcore;
+  const barraMia = $('mi-barra-mana');
+  if (!barraMia) return;
+
+  if (!esHardcore) {
+    barraMia.classList.add('oculto');
+    return;
+  }
+
+  const yo = estado.jugadores.find(j => j.id === miId);
+  const manaInfo = yo?.mana;
+  if (!manaInfo) {
+    barraMia.classList.add('oculto');
+    return;
+  }
+
+  barraMia.classList.remove('oculto');
+  const pct = Math.min(100, (manaInfo.mana / MANA_PARA_VIDA) * 100);
+  const fill = $('mi-mana-fill');
+  const valorEl = $('mi-mana-valor');
+
+  if (fill) {
+    const pctAnterior = parseFloat(fill.dataset.pct || '0');
+    fill.style.width = pct + '%';
+    fill.dataset.pct = pct;
+    // Pulso si sube
+    if (pct > pctAnterior) {
+      fill.classList.remove('mana-pulso');
+      void fill.offsetWidth;
+      fill.classList.add('mana-pulso');
+    }
+  }
+  if (valorEl) valorEl.textContent = `${manaInfo.mana}/${MANA_PARA_VIDA}`;
+}
+
+// Mostrar barra de maná pequeña en rivales (solo número total visible)
+function manaRivalHtml(j) {
+  if (!j.mana) return '';
+  const pct = Math.min(100, (j.mana.mana / MANA_PARA_VIDA) * 100);
+  return `
+    <div class="barra-mana barra-mana-rival">
+      <span class="mana-label">✨</span>
+      <div class="mana-track"><div class="mana-fill" style="width:${pct}%"></div></div>
+      <span class="mana-valor">${j.mana.mana}/${MANA_PARA_VIDA}</span>
+    </div>
+  `;
+}
+
+// ── NOTIFICACIONES DE LOGRO ───────────────────────────────────────────────────
+function mostrarNotificacionLogro(evento) {
+  if (!evento || !evento.logro) return;
+  const cont = $('contenedor-logros');
+  if (!cont) return;
+
+  const icono = LOGRO_ICONOS[evento.logroId] || '✨';
+  const esMio = evento.jugadorId === miId;
+  // Rareza visual: logros de 3+ maná tienen animación más grande
+  const rareza = evento.logro.mana >= 3 ? 'logro-epico' : (evento.logro.mana >= 2 ? 'logro-raro' : 'logro-comun');
+
+  const card = document.createElement('div');
+  card.className = `notificacion-logro ${rareza}`;
+  card.innerHTML = `
+    <div class="logro-icono">${icono}</div>
+    <div class="logro-texto">
+      <span class="logro-jugador">${esMio ? 'Tú' : evento.nickname}</span>
+      <span class="logro-nombre">${evento.logro.nombre}</span>
+      <span class="logro-mana">+${evento.logro.mana} ✨</span>
+    </div>
+    ${evento.vidaGanada ? '<div class="logro-vida-extra">❤️ +1 vida</div>' : ''}
+  `;
+  cont.appendChild(card);
+
+  // Sonido sutil para logros (reutilizamos sonido de carta especial si existe)
+  try { sonidoCartaEspecial(1, 'copas'); } catch (e) {}
+
+  setTimeout(() => card.classList.add('logro-saliendo'), 3200);
+  setTimeout(() => card.remove(), 3700);
+}
+
+function mostrarEventosLogro(eventos) {
+  if (!eventos || eventos.length === 0) return;
+  eventos.forEach((ev, i) => {
+    setTimeout(() => mostrarNotificacionLogro(ev), i * 450);
+  });
+}
+
+// ── ESCALA INVERTIDA (JOKERS) ──────────────────────────────────────────────
+function actualizarEscalaInvertida(estado) {
+  const badge = $('info-escala-invertida');
+  if (!badge) return;
+  if (estado.inversionEscala) {
+    badge.classList.remove('oculto');
+  } else {
+    badge.classList.add('oculto');
+  }
+}
+
+// ── 7 DE OROS — PANEL DE INTERCAMBIO ──────────────────────────────────────────
+let seleccion7Oros = [];
+
+function mostrarPanel7Oros(mesa, jugadorId7) {
+  if (jugadorId7 !== miId) return; // solo el dueño del 7 de oros ve el panel
+
+  seleccion7Oros = [];
+  const panel = $('panel-7oros');
+  const botonesEl = $('botones-7oros');
+  if (!panel || !botonesEl) return;
+
+  panel.classList.remove('oculto');
+  botonesEl.innerHTML = '';
+
+  mesa.forEach((jugada, idx) => {
+    // El dueño del 7 de Oros no puede elegir su propia carta
+    if (jugada.jugadorId === jugadorId7) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer';
+    wrapper.dataset.idx = idx;
+    const cartaEl = crearCartaEl(jugada.carta, { seleccionable: true });
+    wrapper.appendChild(cartaEl);
+
+    wrapper.addEventListener('click', () => {
+      if (seleccion7Oros.includes(idx)) {
+        seleccion7Oros = seleccion7Oros.filter(i => i !== idx);
+        wrapper.classList.remove('carta-7oros-elegida');
+      } else if (seleccion7Oros.length < 2) {
+        seleccion7Oros.push(idx);
+        wrapper.classList.add('carta-7oros-elegida');
+      }
+
+      if (seleccion7Oros.length === 2) {
+        const [idxA, idxB] = seleccion7Oros;
+        socket.emit('usar7Oros', { idxA, idxB }, res => {
+          if (res.error) {
+            mostrarError(res.error);
+            seleccion7Oros = [];
+            botonesEl.querySelectorAll('.carta-7oros-elegida').forEach(el => el.classList.remove('carta-7oros-elegida'));
+          } else {
+            panel.classList.add('oculto');
+          }
+        });
+      }
+    });
+
+    botonesEl.appendChild(wrapper);
+  });
+}
+
+const btnPasar7Oros = $('btn-pasar-7oros');
+if (btnPasar7Oros) {
+  btnPasar7Oros.addEventListener('click', () => {
+    socket.emit('pasar7Oros', res => {
+      if (res.error) mostrarError(res.error);
+      else $('panel-7oros').classList.add('oculto');
+    });
+  });
+}
+
+// ── DUELO DEL PRISIONERO ───────────────────────────────────────────────────────
+let dueloTimerInterval = null;
+let yaElegiDuelo = false;
+
+function avatarDueloHtml(jugador) {
+  const svg = obtenerAvatarSvg(jugador?.avatar);
+  return svg ? `<div class="rival-avatar duelo-avatar-svg">${svg}</div>` : '<div class="duelo-avatar-placeholder">❓</div>';
+}
+
+function abrirOverlayDuelo({ jugadorAId, jugadorBId, nickA, nickB, timeout }) {
+  const overlay = $('overlay-duelo');
+  if (!overlay) return;
+
+  yaElegiDuelo = false;
+
+  const estado = miEstado;
+  const jugA = estado?.jugadores.find(j => j.id === jugadorAId);
+  const jugB = estado?.jugadores.find(j => j.id === jugadorBId);
+
+  $('duelo-avatar-a').innerHTML = avatarDueloHtml(jugA);
+  $('duelo-avatar-b').innerHTML = avatarDueloHtml(jugB);
+  $('duelo-nombre-a').textContent = nickA || jugA?.nickname || '???';
+  $('duelo-nombre-b').textContent = nickB || jugB?.nickname || '???';
+
+  $('duelo-eleccion-a').classList.add('oculto');
+  $('duelo-eleccion-b').classList.add('oculto');
+  $('duelo-resultado').classList.add('oculto');
+  $('duelo-espera').classList.add('oculto');
+  $('duelo-tabla').classList.remove('oculto');
+
+  const soyParticipante = miId === jugadorAId || miId === jugadorBId;
+  const acciones = $('duelo-acciones');
+  const observador = $('duelo-observador');
+
+  if (soyParticipante) {
+    acciones.classList.remove('oculto');
+    observador.classList.add('oculto');
+  } else {
+    acciones.classList.add('oculto');
+    observador.classList.remove('oculto');
+  }
+
+  overlay.classList.remove('oculto');
+
+  // Countdown visual
+  let segs = Math.floor((timeout || 20000) / 1000);
+  const timerEl = $('duelo-timer');
+  timerEl.textContent = segs;
+  timerEl.classList.remove('duelo-timer-urgente');
+  if (dueloTimerInterval) clearInterval(dueloTimerInterval);
+  dueloTimerInterval = setInterval(() => {
+    segs--;
+    if (segs <= 5 && segs >= 0) timerEl.classList.add('duelo-timer-urgente');
+    timerEl.textContent = Math.max(0, segs);
+    if (segs <= 0) clearInterval(dueloTimerInterval);
+  }, 1000);
+}
+
+function elegirDuelo(eleccion) {
+  if (yaElegiDuelo) return;
+  yaElegiDuelo = true;
+  $('duelo-acciones').classList.add('oculto');
+  $('duelo-espera').classList.remove('oculto');
+
+  socket.emit('elegirDuelo', { eleccion }, res => {
+    if (res.error) {
+      mostrarError(res.error);
+      yaElegiDuelo = false;
+      $('duelo-acciones').classList.remove('oculto');
+      $('duelo-espera').classList.add('oculto');
+    }
+  });
+}
+
+const btnDueloColaborar = $('btn-duelo-colaborar');
+const btnDueloTraicionar = $('btn-duelo-traicionar');
+if (btnDueloColaborar)  btnDueloColaborar.addEventListener('click', () => elegirDuelo('colaborar'));
+if (btnDueloTraicionar) btnDueloTraicionar.addEventListener('click', () => elegirDuelo('traicionar'));
+
+function mostrarResultadoDuelo(resultado) {
+  if (dueloTimerInterval) clearInterval(dueloTimerInterval);
+
+  const estado = miEstado;
+  const jugA = estado?.jugadores.find(j => j.id === resultado.jugadorAId);
+  const jugB = estado?.jugadores.find(j => j.id === resultado.jugadorBId);
+
+  const ICONOS_ELECCION = { colaborar: '🤝', traicionar: '🗡️' };
+
+  $('duelo-eleccion-a').textContent = ICONOS_ELECCION[resultado.eleccionA] || '';
+  $('duelo-eleccion-b').textContent = ICONOS_ELECCION[resultado.eleccionB] || '';
+  $('duelo-eleccion-a').classList.remove('oculto');
+  $('duelo-eleccion-b').classList.remove('oculto');
+  $('duelo-tabla').classList.add('oculto');
+  $('duelo-acciones').classList.add('oculto');
+  $('duelo-espera').classList.add('oculto');
+  $('duelo-observador').classList.add('oculto');
+
+  // Construir texto de resultado desde el punto de vista de quien mira
+  let texto = '';
+  const efA = resultado.efectos.find(e => e.jugadorId === resultado.jugadorAId);
+  const efB = resultado.efectos.find(e => e.jugadorId === resultado.jugadorBId);
+
+  function describirEfecto(jug, ef) {
+    if (!jug || !ef) return '';
+    const partes = [];
+    if (ef.mana) partes.push(`${ef.mana > 0 ? '+' : ''}${ef.mana} maná`);
+    if (ef.vidasPerdidas) partes.push(`−${ef.vidasPerdidas} vida`);
+    if (ef.info)       partes.push(`sabe que su carta es <strong>${ef.info === 'mayor' ? 'MAYOR' : 'menor'}</strong>`);
+    if (ef.infoCuanto !== undefined) partes.push(`sabe que su carta es <strong>${Math.abs(ef.infoCuanto)} puntos mayor</strong>`);
+    return `<strong>${jug.nickname}</strong>: ${partes.join(', ') || 'sin cambios'}`;
+  }
+
+  if (resultado.eleccionA === 'colaborar' && resultado.eleccionB === 'colaborar') {
+    texto = `🤝 Ambos colaboraron.<br>${describirEfecto(jugA, efA)}<br>${describirEfecto(jugB, efB)}`;
+  } else if (resultado.eleccionA === 'traicionar' && resultado.eleccionB === 'traicionar') {
+    texto = `🗡️ Ambos traicionaron.<br>${describirEfecto(jugA, efA)}<br>${describirEfecto(jugB, efB)}`;
+  } else {
+    const traidor   = resultado.eleccionA === 'traicionar' ? jugA : jugB;
+    const efTraidor = resultado.eleccionA === 'traicionar' ? efA : efB;
+    const victima   = resultado.eleccionA === 'traicionar' ? jugB : jugA;
+    const efVictima = resultado.eleccionA === 'traicionar' ? efB : efA;
+    texto = `🗡️ ${traidor?.nickname} traicionó a ${victima?.nickname}.<br>${describirEfecto(traidor, efTraidor)}<br>${describirEfecto(victima, efVictima)}`;
+  }
+
+  $('duelo-resultado-texto').innerHTML = texto;
+  $('duelo-resultado').classList.remove('oculto');
+
+  // Cerrar overlay tras unos segundos
+  setTimeout(() => {
+    $('overlay-duelo').classList.add('oculto');
+  }, 5000);
 }
 
 // ── ACCIONES ─────────────────────────────────
@@ -605,7 +948,7 @@ function renderizarSala(sala) {
   sala.jugadores.forEach(j => {
     const li = document.createElement('li');
     li.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;';
-    const avatarSvg = j.avatar ? (AVATARES.personajes[j.avatar] || AVATARES.amigos[j.avatar] || '') : '';
+    const avatarSvg = obtenerAvatarSvg(j.avatar);
     li.innerHTML = `
       ${avatarSvg ? `<span class="avatar-mini">${avatarSvg}</span>` : ''}
       <span class="nombre">${j.nickname}</span>
@@ -672,10 +1015,11 @@ $('btn-unirse').addEventListener('click', () => {
 
 // Selector de modalidad
 const DESCS_MODALIDAD = {
-  clasico: 'Modo estándar — apuestas y bazas clásicas',
-  twisted: 'Las cartas se juegan boca abajo y se revelan a la vez',
-  chaos:   'Tus cartas se barajan tras apostar — no sabes qué juegas',
-  leap:    '🙈 Apuestas a ciegas — ves tus cartas solo después de apostar'
+  clasico:  'Modo estándar — apuestas y bazas clásicas',
+  twisted:  'Las cartas se juegan boca abajo y se revelan a la vez',
+  chaos:    'Tus cartas se barajan tras apostar — no sabes qué juegas',
+  leap:     '🙈 Apuestas a ciegas — ves tus cartas solo después de apostar',
+  hardcore: '💀 Jokers, 7 de Oros árbitro, Rey inmune, maná/logros y Duelo del Prisionero en la ronda final'
 };
 
 document.querySelectorAll('.btn-modo').forEach(btn => {
@@ -705,8 +1049,13 @@ $('btn-siguiente').addEventListener('click', () => {
 const btnNueva = $('btn-nueva-partida');
 if (btnNueva) {
   btnNueva.addEventListener('click', () => {
-    sessionStorage.removeItem('cincoVidasToken');
-    irA('entrada');
+    if (miSala) {
+      renderizarSala(miSala);
+      irA('sala');
+    } else {
+      sessionStorage.removeItem('cincoVidasToken');
+      irA('entrada');
+    }
   });
 }
 
@@ -765,9 +1114,26 @@ socket.on('estadoActualizado', estado => {
     irA('juego');
     renderizarJuego(estado);
   }
+
+  // HARDCORE: si estamos en fase de duelo y el overlay no está abierto
+  // (p.ej. tras reconexión), reabrirlo con los datos del duelo
+  if (estado.fase === 'duelo' && estado.duelo && !estado.duelo.resuelto) {
+    const overlay = $('overlay-duelo');
+    if (overlay && overlay.classList.contains('oculto')) {
+      const jugA = estado.jugadores.find(j => j.id === estado.duelo.jugadorAId);
+      const jugB = estado.jugadores.find(j => j.id === estado.duelo.jugadorBId);
+      abrirOverlayDuelo({
+        jugadorAId: estado.duelo.jugadorAId,
+        jugadorBId: estado.duelo.jugadorBId,
+        nickA: jugA?.nickname,
+        nickB: jugB?.nickname,
+        timeout: 20000
+      });
+    }
+  }
 });
 
-socket.on('minirondaResuelta', ({ ganadorId, multiplicador }) => {
+socket.on('minirondaResuelta', ({ ganadorId, multiplicador, eventosLogro }) => {
   if (ganadorId === miId) sonidoBazaGanada();
   else sonidoBazaPerdida();
   // Flash en la mesa
@@ -775,12 +1141,16 @@ socket.on('minirondaResuelta', ({ ganadorId, multiplicador }) => {
   mesaFlash.classList.add(ganadorId === miId ? 'flash-verde' : 'flash-rojo');
   setTimeout(() => { mesaFlash.classList.remove('flash-verde','flash-rojo'); }, 800);
   $('panel-ases').classList.add('oculto');
+  $('panel-7oros').classList.add('oculto');
   const estado  = miEstado;
   if (!estado) return;
   const ganador = estado.jugadores.find(j => j.id === ganadorId);
   const nombre  = ganador?.nickname || 'Alguien';
   const mult    = multiplicador > 1 ? ` (×${multiplicador} As de Copas 🍷)` : '';
   $('msg-juego').textContent = `✅ Baza para ${nombre}${mult}`;
+
+  // HARDCORE: mostrar logros conseguidos en esta minironda
+  mostrarEventosLogro(eventosLogro);
 });
 
 socket.on('asesPendientes', ({ ases }) => {
@@ -841,6 +1211,17 @@ socket.on('accionAs', ({ palo, mesa }) => {
   }
 });
 
+// HARDCORE: 7 de Oros activo — el dueño elige dos cartas para intercambiar
+socket.on('siete7OrosPendiente', ({ mesa }) => {
+  sonidoAs();
+  mostrarPanel7Oros(mesa, miId);
+});
+
+// HARDCORE: logro conseguido fuera del flujo de minironda (p.ej. 7 de Oros)
+socket.on('logroConseguido', evento => {
+  mostrarNotificacionLogro(evento);
+});
+
 socket.on('mesaActualizada', ({ mesa }) => {
   if (!miEstado) return;
   miEstado.mesa = mesa;
@@ -854,11 +1235,14 @@ socket.on('mesaActualizada', ({ mesa }) => {
 
 let ultimoResumen = [];
 
-socket.on('subrondaTerminada', ({ resumen }) => {
+socket.on('subrondaTerminada', ({ resumen, eventosLogroSubronda }) => {
   ultimoResumen = resumen;
   const miResumen = resumen.find(r => r.id === miId);
   if (miResumen && miResumen.vidasRestadas > 0) sonidoPierdesVidas();
   irA('resumen');
+
+  // HARDCORE: mostrar logros conseguidos al cierre de la subronda
+  mostrarEventosLogro(eventosLogroSubronda);
   const tbody = document.querySelector('#tabla-resumen tbody');
   tbody.innerHTML = '';
   resumen.forEach(r => {
@@ -979,6 +1363,16 @@ document.addEventListener('click', e => {
 
 socket.on('subrondaIniciada', () => irA('juego'));
 
+// HARDCORE: Duelo del Prisionero
+socket.on('dueloIniciado', (data) => {
+  irA('juego'); // asegurar que estamos en pantalla de juego de fondo
+  abrirOverlayDuelo(data);
+});
+
+socket.on('dueloResuelto', (resultado) => {
+  mostrarResultadoDuelo(resultado);
+});
+
 socket.on('partidaTerminada', ({ ganador }) => {
   if (ganador && ganador.id === miId) sonidoVictoria();
   else sonidoEliminado();
@@ -1004,7 +1398,25 @@ socket.on('partidaTerminada', ({ ganador }) => {
       tbodyFin.appendChild(tr);
     });
   }
-  sessionStorage.removeItem('cincoVidasToken');
+  // Countdown visual de 5s hasta que el servidor resetee la sala
+  let segs = 5;
+  const countdownEl = document.getElementById('countdown-reset');
+  if (countdownEl) countdownEl.textContent = segs;
+  const intervalo = setInterval(() => {
+    segs--;
+    if (countdownEl) countdownEl.textContent = segs;
+    if (segs <= 0) clearInterval(intervalo);
+  }, 1000);
+  // Token se conserva — la sala se reseteará automáticamente en 5s
+});
+
+// Sala reseteada tras fin de partida — todos vuelven a la antesala
+socket.on('salaReseteada', ({ sala }) => {
+  miSala = sala;
+  miEstado = null;
+  ultimoResumen = [];
+  renderizarSala(sala);
+  irA('sala');
 });
 
 // ── MODAL INSTRUCCIONES ──

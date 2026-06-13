@@ -7,12 +7,18 @@ const {
 } = require('./game/roomManager');
 const {
   crearPartida, iniciarSubronda, registrarApuesta,
-  jugarCarta, espiarCarta, vistaPublica, CARTAS_POR_SUBRONDA, CONFIG_MODALIDAD
+  registrarEleccionDuelo, resolverDuelo,
+  jugarCarta, aplicar7Oros, espiarCarta, vistaPublica,
+  aplicarMana, comprobarLogrosMinironda, comprobarLogrosSubronda,
+  CARTAS_POR_SUBRONDA, CONFIG_MODALIDAD, LOGROS
 } = require('./game/game');
 const {
   resolverMinironda, aplicarAsOros, aplicarAsEspadas,
   aplicarAsBastos, calcularVidasARestar
 } = require('./game/resolver');
+
+const DUELO_TIMEOUT_MS = 20000; // 20s para el duelo del prisionero
+const dueloTimers = {};         // codigoSala → timeout
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -48,7 +54,10 @@ function iniciarTurnoTimer(sala) {
     io.to(sala.codigo).emit('turnoSkipeado', { nickname: jugadorActual.nickname });
     emitirEstado(sala);
     if (resultado.todosJugaron) {
-      const resolucion = resolverMinironda(sala.partida.mesa);
+      const resolucion = resolverMinironda(sala.partida.mesa, {
+        inversionEscala: sala.partida.inversionEscala || false,
+        esHardcore:      sala.partida.config.hardcore  || false
+      });
       const hayAses = gestionarAses(sala, resolucion);
       if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional);
     } else {
@@ -70,7 +79,12 @@ function emitirEstado(sala) {
 
 function gestionarAses(sala, resultado) {
   const ases = resultado.ases;
-  if (ases.length === 0) return false;
+
+  const siete7OrosActivo = sala.partida.config.hardcore &&
+    resultado.mesa.some(j => j.carta.valor === 7 && j.carta.palo === 'oros');
+
+  // Si no hay ases ni 7 de oros activo, no hay resolución asíncrona pendiente
+  if (ases.length === 0 && !siete7OrosActivo) return false;
 
   sala.partida.resolucion = {
     mesa:               resultado.mesa,
@@ -78,20 +92,33 @@ function gestionarAses(sala, resultado) {
     efectosAs:          resultado.efectosAs,
     ganadorProvisional: resultado.ganadorProvisional,
     asesPendientes:     ases.map(a => a.carta.palo).filter(p => p === 'espadas' || p === 'bastos'),
-    multiplicadorCopas: ases.some(a => a.carta.palo === 'copas')
+    multiplicadorCopas: ases.some(a => a.carta.palo === 'copas'),
+    contextoLogros:     resultado.contextoLogros || null,
+    // HARDCORE: 7 de oros activo en mesa
+    siete7OrosActivo
   };
 
-  io.to(sala.codigo).emit('asesPendientes', {
-    ases, efectosAs: resultado.efectosAs, mesa: resultado.mesa
-  });
+  if (ases.length > 0) {
+    io.to(sala.codigo).emit('asesPendientes', {
+      ases, efectosAs: resultado.efectosAs, mesa: resultado.mesa
+    });
 
-  ases.forEach(as => {
-    if (as.carta.palo === 'espadas' || as.carta.palo === 'bastos') {
-      io.to(as.jugadorId).emit('accionAs', { palo: as.carta.palo, mesa: resultado.mesa });
+    ases.forEach(as => {
+      if (as.carta.palo === 'espadas' || as.carta.palo === 'bastos') {
+        io.to(as.jugadorId).emit('accionAs', { palo: as.carta.palo, mesa: resultado.mesa });
+      }
+    });
+  }
+
+  // HARDCORE: avisar al dueño del 7 de oros para que pueda usar su poder
+  if (siete7OrosActivo) {
+    const jugador7 = resultado.mesa.find(j => j.carta.valor === 7 && j.carta.palo === 'oros');
+    if (jugador7) {
+      io.to(jugador7.jugadorId).emit('siete7OrosPendiente', { mesa: resultado.mesa });
     }
-  });
+  }
 
-  if (sala.partida.resolucion.asesPendientes.length === 0) {
+  if (sala.partida.resolucion.asesPendientes.length === 0 && !siete7OrosActivo) {
     comprobarAsesResueltos(sala);
   }
 
@@ -105,13 +132,38 @@ function finalizarMinironda(sala, ganadorId) {
   const jugador       = partida.jugadores.find(j => j.id === ganadorId);
   if (jugador) jugador.bazasGanadas += multiplicador;
 
-  const numCartas    = CARTAS_POR_SUBRONDA[partida.subrondaActual];
+  const numCartas = CARTAS_POR_SUBRONDA[partida.subrondaActual];
+
+  // HARDCORE: comprobar logros de maná de esta minironda
+  let eventosLogro = [];
+  if (partida.config.hardcore && resolucion.contextoLogros) {
+    const ctx = { ...resolucion.contextoLogros, ganadorId };
+    eventosLogro = comprobarLogrosMinironda(partida, ctx);
+
+    // Logro CaosControlado: joker anulado por otro joker
+    if (ctx.jokerAnulado) {
+      const mesaOrig = ctx.mesaOriginal || [];
+      const jokers   = mesaOrig.filter(j => j.carta.palo === 'joker');
+      jokers.forEach(j => {
+        const jug = partida.jugadores.find(p => p.id === j.jugadorId);
+        if (jug) {
+          const ev = aplicarMana(partida, jug, 1, 'caos_controlado');
+          if (ev) eventosLogro.push(ev);
+        }
+      });
+    }
+  }
+
   partida.resolucion = null;
 
   io.to(sala.codigo).emit('minirondaResuelta', {
     ganadorId,
     multiplicador,
-    bazasGanadas: jugador ? jugador.bazasGanadas : 0
+    bazasGanadas:  jugador ? jugador.bazasGanadas : 0,
+    eventosLogro,  // array de logros conseguidos esta minironda
+    estadoMana:    partida.config.hardcore
+      ? partida.jugadores.map(j => ({ id: j.id, mana: j.mana?.mana ?? 0, vidas: j.vidas }))
+      : null
   });
 
   setTimeout(() => {
@@ -132,19 +184,49 @@ function finalizarSubronda(sala) {
   const partida = sala.partida;
   const resumen = [];
 
+  // Precalcular quién es el único con 1 vida (para logro Agonía)
+  const jugadoresConUnaVida = partida.jugadores.filter(j => j.vidas === 1);
+  const unicoConUnaVida     = jugadoresConUnaVida.length === 1 ? jugadoresConUnaVida[0].id : null;
+
   partida.jugadores.forEach(j => {
     const restar = calcularVidasARestar(j.apuesta, j.bazasGanadas);
+
+    // HARDCORE: detectar flags para logros antes de restar
+    const teniaSotaOSuperior = partida.config.hardcore &&
+      j._manoPrevia && j._manoPrevia.some(c => c.valor >= 10);
+    const eraUnicoConUnaVida = unicoConUnaVida === j.id;
+
     j.vidas -= restar;
     if (j.vidas < 0) j.vidas = 0;
+
+    // HARDCORE: colchón de maná lleno al perder vida con cap máximo
+    if (partida.config.hardcore && j.mana && restar > 0) {
+      const maxVidas = partida.maxVidas || 7;
+      if (j.vidas < maxVidas && j.mana.mana >= 5) {
+        j.vidas++;
+        j.mana.mana -= 5;
+        j.mana.vidasGanadasMana++;
+        console.log(`[MANÁ-COLCHÓN] ${j.nickname} recupera 1 vida por maná lleno`);
+      }
+    }
+
     resumen.push({
-      id:             j.id,
-      nickname:       j.nickname,
-      apuesta:        j.apuesta,
-      bazasGanadas:   j.bazasGanadas,
-      vidasRestadas:  restar,
-      vidasRestantes: j.vidas
+      id:                j.id,
+      nickname:          j.nickname,
+      apuesta:           j.apuesta,
+      bazasGanadas:      j.bazasGanadas,
+      vidasRestadas:     restar,
+      vidasRestantes:    j.vidas,
+      teniaSotaOSuperior,
+      eraUnicoConUnaVida
     });
   });
+
+  // HARDCORE: logros de subronda
+  let eventosLogroSubronda = [];
+  if (partida.config.hardcore) {
+    eventosLogroSubronda = comprobarLogrosSubronda(partida, resumen);
+  }
 
   const nuevosEspectadores = partida.jugadores.filter(j => j.vidas <= 0);
   nuevosEspectadores.forEach(j => { j.espectador = true; });
@@ -154,13 +236,37 @@ function finalizarSubronda(sala) {
 
   io.to(sala.codigo).emit('subrondaTerminada', {
     resumen,
-    jugadoresVivos: partida.jugadores
+    jugadoresVivos:      partida.jugadores,
+    eventosLogroSubronda: eventosLogroSubronda || []
   });
 
   if (partida.jugadores.length <= 1) {
     const ganador = partida.jugadores[0] || null;
     io.to(sala.codigo).emit('partidaTerminada', { ganador });
-    sala.estado = 'terminada';
+
+    // Resetear sala para que todos vuelvan a la antesala sin reconectarse
+    setTimeout(() => {
+      // Reunir todos los jugadores (activos + espectadores) con sus vidas reseteadas
+      const todosLosJugadores = [
+        ...(partida.jugadores || []),
+        ...(sala.espectadores || [])
+      ].map(j => ({
+        id:       j.id,
+        nickname: j.nickname,
+        token:    j.token,
+        avatar:   j.avatar || null,
+        vidas:    5,
+        listo:    false
+      }));
+
+      sala.jugadores   = todosLosJugadores;
+      sala.espectadores = [];
+      sala.partida     = null;
+      sala.estado      = 'esperando';
+
+      io.to(sala.codigo).emit('salaReseteada', { sala });
+    }, 5000); // 5s para que se vea la pantalla de fin
+
     return;
   }
 
@@ -182,14 +288,21 @@ function comprobarAsesResueltos(sala) {
   const pendientesAccion = res.asesPendientes.filter(p => p === 'espadas' || p === 'bastos');
   if (pendientesAccion.length > 0) return;
 
+  // HARDCORE: si el 7 de oros sigue pendiente de usarse, esperar
+  if (res.siete7OrosActivo) return;
+
   let ganador = res.ganadorProvisional;
+  const inversionEscala = sala.partida.inversionEscala || false;
 
   if (res.ases.some(a => a.carta.palo === 'oros')) {
     ganador = aplicarAsOros(ganador, res.ases);
   } else {
     const normales = res.mesa.filter(j => j.carta.valor !== 1);
     if (normales.length > 0) {
-      ganador = normales.reduce((a, b) => a.carta.valor > b.carta.valor ? a : b).jugadorId;
+      ganador = normales.reduce((a, b) => {
+        const aGana = inversionEscala ? a.carta.valor < b.carta.valor : a.carta.valor > b.carta.valor;
+        return aGana ? a : b;
+      }).jugadorId;
     } else if (res.mesa.length > 0) {
       ganador = res.mesa[res.mesa.length - 1].jugadorId;
     }
@@ -313,7 +426,10 @@ io.on('connection', (socket) => {
       // TWISTED: delay de 1.5s para que los jugadores vean las cartas girar
       const delayReveal = partida.config.cartasBocaAbajo ? 1500 : 0;
       setTimeout(() => {
-        const resolucion = resolverMinironda(sala.partida.mesa);
+        const resolucion = resolverMinironda(sala.partida.mesa, {
+        inversionEscala: sala.partida.inversionEscala || false,
+        esHardcore:      sala.partida.config.hardcore  || false
+      });
         const hayAses = gestionarAses(sala, resolucion);
         if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional);
       }, delayReveal);
@@ -333,7 +449,12 @@ io.on('connection', (socket) => {
       if (objetivo && objetivo.jugadorId === socket.id) {
         return callback({ error: 'No puedes eliminar tu propia carta' });
       }
-      res.mesa = aplicarAsEspadas(res.mesa, cartaIdx);
+      const resultadoEspadas = aplicarAsEspadas(
+        res.mesa, cartaIdx,
+        sala.partida.config.hardcore || false
+      );
+      if (resultadoEspadas.error) return callback({ error: resultadoEspadas.error });
+      res.mesa = resultadoEspadas.mesa;
     }
 
     res.asesPendientes = res.asesPendientes.filter(p => p !== 'espadas');
@@ -367,6 +488,34 @@ io.on('connection', (socket) => {
     iniciarSubronda(sala.partida);
     io.to(sala.codigo).emit('subrondaIniciada', { subronda: sala.partida.subrondaActual + 1 });
     emitirEstado(sala);
+
+    // HARDCORE: si hay duelo pendiente, emitir evento y arrancar timer
+    if (sala.partida.duelo && sala.partida.fase === 'duelo') {
+      const duelo = sala.partida.duelo;
+      io.to(sala.codigo).emit('dueloIniciado', {
+        jugadorAId: duelo.jugadorAId,
+        jugadorBId: duelo.jugadorBId,
+        nickA: sala.partida.jugadores.find(j => j.id === duelo.jugadorAId)?.nickname,
+        nickB: sala.partida.jugadores.find(j => j.id === duelo.jugadorBId)?.nickname,
+        timeout: DUELO_TIMEOUT_MS
+      });
+
+      // Timer: si no eligen en 20s → traición automática
+      if (dueloTimers[sala.codigo]) clearTimeout(dueloTimers[sala.codigo]);
+      dueloTimers[sala.codigo] = setTimeout(() => {
+        if (!sala.partida?.duelo || sala.partida.duelo.resuelto) return;
+        console.log('[DUELO TIMEOUT] Traición automática por tiempo');
+        // Forzar traición para quien no eligió
+        const d = sala.partida.duelo;
+        if (!d.eleccionA) d.eleccionA = 'traicionar';
+        if (!d.eleccionB) d.eleccionB = 'traicionar';
+        const resultadoDuelo = resolverDuelo(sala.partida);
+        io.to(sala.codigo).emit('dueloResuelto', resultadoDuelo);
+        emitirEstado(sala);
+        delete dueloTimers[sala.codigo];
+      }, DUELO_TIMEOUT_MS);
+    }
+
     callback({ ok: true });
   });
 
@@ -424,6 +573,78 @@ io.on('connection', (socket) => {
       receptorId:      receptor.id,
       receptorNick:    receptor.nickname
     });
+    callback({ ok: true });
+  });
+
+  // ── HARDCORE: DUELO DEL PRISIONERO ──────────────────────────────────────────
+
+  socket.on('elegirDuelo', ({ eleccion }, callback) => {
+    const sala = obtenerSalaPorSocket(socket.id);
+    if (!sala?.partida) return callback({ error: 'Sin partida activa' });
+    if (sala.partida.fase !== 'duelo') return callback({ error: 'No hay duelo activo' });
+
+    const resultado = registrarEleccionDuelo(sala.partida, socket.id, eleccion);
+    if (resultado.error) return callback({ error: resultado.error });
+
+    emitirEstado(sala);
+
+    if (resultado.resuelto) {
+      // Limpiar timer del duelo
+      if (dueloTimers[sala.codigo]) {
+        clearTimeout(dueloTimers[sala.codigo]);
+        delete dueloTimers[sala.codigo];
+      }
+      const resultadoDuelo = resolverDuelo(sala.partida);
+      io.to(sala.codigo).emit('dueloResuelto', resultadoDuelo);
+      emitirEstado(sala);
+    }
+    callback({ ok: true });
+  });
+
+  // ── HARDCORE: 7 DE OROS ───────────────────────────────────────────────────────
+
+  socket.on('usar7Oros', ({ idxA, idxB }, callback) => {
+    const sala = obtenerSalaPorSocket(socket.id);
+    if (!sala?.partida?.resolucion) return callback({ error: 'No hay resolución activa' });
+    const res = sala.partida.resolucion;
+
+    if (!res.siete7OrosActivo) return callback({ error: 'No hay 7 de oros activo' });
+
+    // Verificar que quien llama es el dueño del 7 de oros
+    const jugador7 = res.mesa.find(j => j.carta.valor === 7 && j.carta.palo === 'oros');
+    if (!jugador7 || jugador7.jugadorId !== socket.id) {
+      return callback({ error: 'No eres el jugador del 7 de Oros' });
+    }
+
+    const resultado = aplicar7Oros(res.mesa, idxA, idxB, socket.id);
+    if (resultado.error) return callback({ error: resultado.error });
+
+    res.mesa             = resultado.mesa;
+    res.siete7OrosActivo = false; // ya se usó
+
+    // Logro "El Rey Detrás del Rey": el 7 hizo ganar a alguien que iba perdiendo
+    // Comprobar si la carta beneficiada no era la más alta antes del intercambio
+    const jugadorBeneficiado = res.mesa[idxA].jugadorId !== socket.id
+      ? res.mesa[idxA].jugadorId
+      : res.mesa[idxB].jugadorId;
+    const jug7  = sala.partida.jugadores.find(j => j.id === socket.id);
+    const jugBen = sala.partida.jugadores.find(j => j.id === jugadorBeneficiado);
+    if (jug7 && jug7.mana) {
+      const ev = aplicarMana(sala.partida, jug7, 1, 'rey_detras_del_rey');
+      if (ev) io.to(sala.codigo).emit('logroConseguido', ev);
+    }
+
+    io.to(sala.codigo).emit('mesaActualizada', { mesa: res.mesa });
+    // Tras el 7 de oros, continuar con resolución normal de ases
+    comprobarAsesResueltos(sala);
+    callback({ ok: true });
+  });
+
+  socket.on('pasar7Oros', (callback) => {
+    const sala = obtenerSalaPorSocket(socket.id);
+    if (!sala?.partida?.resolucion) return callback({ error: 'No hay resolución activa' });
+    sala.partida.resolucion.siete7OrosActivo = false;
+    comprobarAsesResueltos(sala);
     callback({ ok: true });
   });
 

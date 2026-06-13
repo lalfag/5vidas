@@ -1,37 +1,40 @@
+// deck.js — Baraja española de 40 cartas
+// Valores: 1 (As) a 7, luego Sota=10, Caballo=11, Rey=12
+// Palos: oros, copas, espadas, bastos
+
 const PALOS = ['oros', 'copas', 'espadas', 'bastos'];
 const VALORES = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
 
 function crearBaraja() {
   const baraja = [];
-  for (const palo of PALOS) {
-    for (const valor of VALORES) {
-      baraja.push({ palo, valor });
-    }
-  }
+  PALOS.forEach(palo => {
+    VALORES.forEach(valor => {
+      baraja.push({ valor, palo });
+    });
+  });
   return baraja;
 }
 
-function barajar(baraja) {
-  const b = [...baraja];
-  for (let i = b.length - 1; i > 0; i--) {
+function barajar(mazo) {
+  const copia = [...mazo];
+  for (let i = copia.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [b[i], b[j]] = [b[j], b[i]];
+    [copia[i], copia[j]] = [copia[j], copia[i]];
   }
-  return b;
+  return copia;
 }
 
-function repartir(baraja, numJugadores, cartasPorJugador) {
+// Reparte numCartas a cada uno de numJugadores jugadores
+function repartir(baraja, numJugadores, numCartas) {
   const manos = Array.from({ length: numJugadores }, () => []);
-  for (let c = 0; c < cartasPorJugador; c++) {
+  let idx = 0;
+  for (let c = 0; c < numCartas; c++) {
     for (let j = 0; j < numJugadores; j++) {
-      manos[j].push(baraja.pop());
+      manos[j].push(baraja[idx]);
+      idx++;
     }
   }
   return manos;
 }
 
-function esAs(carta) {
-  return carta.valor === 1;
-}
-
-module.exports = { crearBaraja, barajar, repartir, esAs, PALOS, VALORES };
+module.exports = { crearBaraja, barajar, repartir, PALOS, VALORES };

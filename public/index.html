@@ -120,12 +120,7 @@
   <div id="pantalla-avatar" class="pantalla oculto">
     <h2>Elige tu avatar</h2>
     <div class="avatar-seccion">
-      <p class="avatar-seccion-titulo">Personajes</p>
-      <div id="avatar-grid-personajes" class="avatar-grid"></div>
-    </div>
-    <div class="avatar-seccion">
-      <p class="avatar-seccion-titulo">Amigos</p>
-      <div id="avatar-grid-amigos" class="avatar-grid"></div>
+      <div id="avatar-grid-todos" class="avatar-grid"></div>
     </div>
     <button id="btn-confirmar-avatar" disabled>Confirmar →</button>
     <p id="msg-avatar" class="info"></p>
@@ -140,10 +135,11 @@
     <div id="selector-modalidad" class="oculto" style="width:100%;display:flex;flex-direction:column;gap:0.5rem">
       <p style="color:#aaa;font-size:0.85rem;text-align:center">Modo de juego</p>
       <div style="display:flex;gap:0.5rem;width:100%;flex-wrap:wrap">
-        <button id="btn-modo-clasico" class="btn-modo activo" data-modo="clasico">⚔️ Clásico</button>
-        <button id="btn-modo-twisted" class="btn-modo secundario" data-modo="twisted">🃏 Twisted</button>
-        <button id="btn-modo-chaos"   class="btn-modo secundario" data-modo="chaos">🌀 Chaos</button>
-        <button id="btn-modo-leap"    class="btn-modo secundario" data-modo="leap">🙈 Leap</button>
+        <button id="btn-modo-clasico"  class="btn-modo activo" data-modo="clasico">⚔️ Clásico</button>
+        <button id="btn-modo-twisted"  class="btn-modo secundario" data-modo="twisted">🃏 Twisted</button>
+        <button id="btn-modo-chaos"    class="btn-modo secundario" data-modo="chaos">🌀 Chaos</button>
+        <button id="btn-modo-leap"     class="btn-modo secundario" data-modo="leap">🙈 Leap</button>
+        <button id="btn-modo-hardcore" class="btn-modo secundario btn-modo-hardcore" data-modo="hardcore">💀 Hardcore</button>
       </div>
       <p id="desc-modalidad" style="color:#aaa;font-size:0.8rem;text-align:center">Modo estándar — apuestas y bazas clásicas</p>
     </div>
@@ -156,6 +152,7 @@
       <span id="info-subronda">Subronda 1/5</span>
       <span id="info-fase">Apuestas</span>
       <span id="info-modalidad" style="font-size:0.75rem;color:#f0c040"></span>
+      <span id="info-escala-invertida" class="oculto badge-joker">🃏 Escala invertida</span>
     </div>
     <div id="banner-espectador" class="oculto">💀 Estás eliminado — modo espectador</div>
     <div id="rivales"></div>
@@ -169,6 +166,11 @@
         <span id="mis-vidas"></span>
         <span id="mi-apuesta-info"></span>
       </div>
+      <div id="mi-barra-mana" class="barra-mana oculto">
+        <span class="mana-label">✨ Maná</span>
+        <div class="mana-track"><div id="mi-mana-fill" class="mana-fill"></div></div>
+        <span id="mi-mana-valor" class="mana-valor">0/5</span>
+      </div>
       <div id="mi-mano"></div>
     </div>
     <div id="panel-apuestas" class="oculto">
@@ -178,6 +180,11 @@
     <div id="panel-ases" class="oculto">
       <p id="msg-as"></p>
       <div id="botones-as"></div>
+    </div>
+    <div id="panel-7oros" class="oculto">
+      <p id="msg-7oros">🏅 7 de Oros — Árbitro: elige DOS cartas en mesa para intercambiar sus valores</p>
+      <div id="botones-7oros"></div>
+      <button id="btn-pasar-7oros" class="secundario">No usar el poder</button>
     </div>
     <p id="msg-juego" class="info"></p>
   </div>
@@ -204,8 +211,70 @@
       </thead>
       <tbody></tbody>
     </table>
-    <button id="btn-nueva-partida">Volver al inicio</button>
+    <p id="msg-fin-reset" style="color:#aaa;font-size:0.85rem;margin-top:0.5rem">Volviendo a la sala en <span id="countdown-reset">5</span>s...</p>
+    <button id="btn-nueva-partida">Volver a la sala ahora</button>
   </div>
+
+  <!-- OVERLAY: DUELO DEL PRISIONERO (Hardcore) -->
+  <div id="overlay-duelo" class="modal-overlay oculto duelo-overlay">
+    <div class="duelo-escena">
+      <h2 class="duelo-titulo">⚔️ El Duelo</h2>
+      <p class="duelo-subtitulo">Ronda final — Dilema del Prisionero</p>
+
+      <div class="duelo-arena">
+        <div class="duelo-jugador duelo-jugador-a">
+          <div id="duelo-avatar-a" class="duelo-avatar"></div>
+          <span id="duelo-nombre-a" class="duelo-nombre"></span>
+          <div id="duelo-eleccion-a" class="duelo-eleccion-icono oculto"></div>
+        </div>
+
+        <div class="duelo-centro">
+          <div id="duelo-timer" class="duelo-timer">20</div>
+          <p class="duelo-vs">VS</p>
+        </div>
+
+        <div class="duelo-jugador duelo-jugador-b">
+          <div id="duelo-avatar-b" class="duelo-avatar"></div>
+          <span id="duelo-nombre-b" class="duelo-nombre"></span>
+          <div id="duelo-eleccion-b" class="duelo-eleccion-icono oculto"></div>
+        </div>
+      </div>
+
+      <!-- Tabla de posibles resultados -->
+      <div id="duelo-tabla" class="duelo-tabla">
+        <p class="duelo-tabla-titulo">Posibles resultados</p>
+        <div class="duelo-tabla-grid">
+          <div class="duelo-celda duelo-celda-cabecera"></div>
+          <div class="duelo-celda duelo-celda-cabecera">Rival 🤝 Colabora</div>
+          <div class="duelo-celda duelo-celda-cabecera">Rival 🗡️ Traiciona</div>
+
+          <div class="duelo-celda duelo-celda-cabecera">Tú 🤝 Colaboras</div>
+          <div class="duelo-celda duelo-celda-resultado">Ambos +2 maná<br>+ sabéis si vuestra carta es mayor o menor</div>
+          <div class="duelo-celda duelo-celda-resultado duelo-malo">Rival sabe CUÁNTO es mayor<br>Tú pierdes 1 vida (solo sabes mayor/menor)</div>
+
+          <div class="duelo-celda duelo-celda-cabecera">Tú 🗡️ Traicionas</div>
+          <div class="duelo-celda duelo-celda-resultado duelo-bueno">Sabes CUÁNTO es mayor tu carta<br>Rival pierde 1 vida (solo sabe mayor/menor)</div>
+          <div class="duelo-celda duelo-celda-resultado">Ambos −1 maná<br>sin información</div>
+        </div>
+      </div>
+
+      <div id="duelo-acciones" class="duelo-acciones">
+        <button id="btn-duelo-colaborar" class="btn-duelo btn-duelo-colaborar">🤝 Colaborar</button>
+        <button id="btn-duelo-traicionar" class="btn-duelo btn-duelo-traicionar">🗡️ Traicionar</button>
+      </div>
+
+      <p id="duelo-espera" class="duelo-espera oculto">✓ Decisión tomada — esperando al rival...</p>
+
+      <div id="duelo-resultado" class="duelo-resultado oculto">
+        <p id="duelo-resultado-texto"></p>
+      </div>
+
+      <p id="duelo-observador" class="duelo-observador oculto">👁️ Eres espectador de este duelo</p>
+    </div>
+  </div>
+
+  <!-- CONTENEDOR: NOTIFICACIONES DE LOGRO (Hardcore) -->
+  <div id="contenedor-logros"></div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script type="module" src="/js/main.js"></script>
