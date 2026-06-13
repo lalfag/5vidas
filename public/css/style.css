@@ -1185,6 +1185,32 @@ button:disabled {
    MODO HARDCORE
    ════════════════════════════════════════════════════════════════════════════ */
 
+/* ── TABLA DE LOGROS (modal Hardcore) ── */
+.tabla-logros {
+  font-size: 0.72rem;
+}
+.tabla-logros th:first-child,
+.tabla-logros td:first-child {
+  text-align: left;
+  white-space: nowrap;
+}
+.tabla-logros td:nth-child(2) {
+  text-align: left;
+  color: #ccc;
+  line-height: 1.4;
+}
+.tabla-logros td:last-child {
+  color: #c084fc;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tabla-logros-nota {
+  margin-top: 0.6rem;
+  font-size: 0.75rem;
+  color: var(--dorado);
+  text-align: center;
+}
+
 /* ── CARTA JOKER ── */
 .carta.joker {
   background:

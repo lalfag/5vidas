@@ -56,7 +56,17 @@ function resolverMinironda(jugadas, opciones = {}) {
   log.push(`Ases activos: ${ases.length > 0 ? ases.map(a => a.carta.palo).join(', ') : 'ninguno'}`);
 
   // 7. Ganador provisional con inversión de escala si procede
-  const ganadorProvisional = calcularGanador(normales, log, inversionEscala);
+  //    NORMAL: solo compiten las cartas "normales" (valor !== 1); los ases
+  //    se resuelven aparte por sus poderes (Oros gana auto, Copas no compite, etc.)
+  //    INVERTIDA: el valor 1 pasa a ser el más alto, así que los ases NO-Oros
+  //    también compiten por valor (su poder se sigue aplicando si ganan).
+  //    El As de Oros siempre se gestiona por su canal especial (aplicarAsOros).
+  let candidatos = normales;
+  if (inversionEscala) {
+    const asesNoOros = ases.filter(j => j.carta.palo !== 'oros');
+    candidatos = [...normales, ...asesNoOros];
+  }
+  const ganadorProvisional = calcularGanador(candidatos, log, inversionEscala);
 
   // 8. Contexto para el sistema de logros (se envía a comprobarLogrosMinironda)
   const contextoLogros = {

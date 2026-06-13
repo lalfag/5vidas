@@ -692,7 +692,7 @@ function mostrarNotificacionLogro(evento) {
 function mostrarEventosLogro(eventos) {
   if (!eventos || eventos.length === 0) return;
   eventos.forEach((ev, i) => {
-    setTimeout(() => mostrarNotificacionLogro(ev), i * 450);
+    setTimeout(() => mostrarNotificacionLogro(ev), i * 450 + 1000);
   });
 }
 

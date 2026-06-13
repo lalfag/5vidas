@@ -59,7 +59,7 @@ function iniciarTurnoTimer(sala) {
         esHardcore:      sala.partida.config.hardcore  || false
       });
       const hayAses = gestionarAses(sala, resolucion);
-      if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional);
+      if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional, resolucion.contextoLogros);
     } else {
       iniciarTurnoTimer(sala);
     }
@@ -125,7 +125,7 @@ function gestionarAses(sala, resultado) {
   return true;
 }
 
-function finalizarMinironda(sala, ganadorId) {
+function finalizarMinironda(sala, ganadorId, contextoLogros = null) {
   const partida       = sala.partida;
   const resolucion    = partida.resolucion || {};
   const multiplicador = resolucion.multiplicadorCopas ? 2 : 1;
@@ -135,9 +135,11 @@ function finalizarMinironda(sala, ganadorId) {
   const numCartas = CARTAS_POR_SUBRONDA[partida.subrondaActual];
 
   // HARDCORE: comprobar logros de maná de esta minironda
+  // contextoLogros puede venir del parámetro (caso sin ases) o de partida.resolucion (caso con ases/7oros)
   let eventosLogro = [];
-  if (partida.config.hardcore && resolucion.contextoLogros) {
-    const ctx = { ...resolucion.contextoLogros, ganadorId };
+  const ctxBase = contextoLogros || resolucion.contextoLogros || null;
+  if (partida.config.hardcore && ctxBase) {
+    const ctx = { ...ctxBase, ganadorId };
     eventosLogro = comprobarLogrosMinironda(partida, ctx);
 
     // Logro CaosControlado: joker anulado por otro joker
@@ -169,10 +171,11 @@ function finalizarMinironda(sala, ganadorId) {
   setTimeout(() => {
     partida.minirondaActual++;
     if (partida.minirondaActual < numCartas) {
-      partida.iniciadorIdx = partida.jugadores.findIndex(j => j.id === ganadorId);
-      partida.turnoIdx     = partida.iniciadorIdx;
-      partida.fase         = 'juego';
-      partida.mesa         = [];
+      partida.iniciadorIdx    = partida.jugadores.findIndex(j => j.id === ganadorId);
+      partida.turnoIdx        = partida.iniciadorIdx;
+      partida.fase            = 'juego';
+      partida.mesa            = [];
+      partida.inversionEscala = false; // HARDCORE: el joker solo afecta a SU minironda
       emitirEstado(sala);
     } else {
       finalizarSubronda(sala);
@@ -270,7 +273,10 @@ function finalizarSubronda(sala) {
     return;
   }
 
-  partida.iniciadorIdx = (partida.iniciadorIdx + 1) % partida.jugadores.length;
+  // Rotar el iniciador de la PRÓXIMA subronda (independiente de quién ganó
+  // la última baza de esta subronda, que es lo que queda en iniciadorIdx)
+  const idxAnterior = partida.iniciadorSubrondaIdx ?? 0;
+  partida.iniciadorSubrondaIdx = (idxAnterior + 1) % partida.jugadores.length;
 
   if (partida.subrondaActual >= 4) {
     partida.subrondaActual = 0;
@@ -297,9 +303,17 @@ function comprobarAsesResueltos(sala) {
   if (res.ases.some(a => a.carta.palo === 'oros')) {
     ganador = aplicarAsOros(ganador, res.ases);
   } else {
+    // Mismo criterio que resolver.js: en escala normal solo compiten las
+    // cartas "normales" (valor !== 1). En escala invertida, el valor 1 es
+    // el más alto, así que los ases supervivientes (no-oros) también compiten.
     const normales = res.mesa.filter(j => j.carta.valor !== 1);
-    if (normales.length > 0) {
-      ganador = normales.reduce((a, b) => {
+    let candidatos = normales;
+    if (inversionEscala) {
+      const asesNoOros = res.mesa.filter(j => j.carta.valor === 1 && j.carta.palo !== 'oros');
+      candidatos = [...normales, ...asesNoOros];
+    }
+    if (candidatos.length > 0) {
+      ganador = candidatos.reduce((a, b) => {
         const aGana = inversionEscala ? a.carta.valor < b.carta.valor : a.carta.valor > b.carta.valor;
         return aGana ? a : b;
       }).jugadorId;
@@ -384,8 +398,10 @@ io.on('connection', (socket) => {
     sala.estado  = 'jugando';
     sala.partida = crearPartida(sala.jugadores, modalidad);
     sala.modalidad = modalidad;
-    sala.partida.iniciadorIdx = Math.floor(Math.random() * sala.jugadores.length);
-    sala.partida.turnoIdx     = sala.partida.iniciadorIdx;
+    const inicioAleatorio = Math.floor(Math.random() * sala.jugadores.length);
+    sala.partida.iniciadorIdx         = inicioAleatorio;
+    sala.partida.iniciadorSubrondaIdx = inicioAleatorio;
+    sala.partida.turnoIdx             = inicioAleatorio;
     iniciarSubronda(sala.partida);
 
     io.to(sala.codigo).emit('partidaIniciada');
@@ -431,7 +447,7 @@ io.on('connection', (socket) => {
         esHardcore:      sala.partida.config.hardcore  || false
       });
         const hayAses = gestionarAses(sala, resolucion);
-        if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional);
+        if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional, resolucion.contextoLogros);
       }, delayReveal);
     } else {
       iniciarTurnoTimer(sala);
@@ -483,7 +499,7 @@ io.on('connection', (socket) => {
     // Resetear flag de petición de vida
     if (sala.espectadores) sala.espectadores.forEach(j => { j.pidioVidaEstaRonda = false; });
 
-    console.log(`[TURNO] Subronda ${sala.partida.subrondaActual + 1} — iniciadorIdx: ${sala.partida.iniciadorIdx} — jugadores: ${sala.partida.jugadores.map(j => j.nickname).join(',')}`);
+    console.log(`[TURNO] Subronda ${sala.partida.subrondaActual + 1} — iniciadorSubrondaIdx: ${sala.partida.iniciadorSubrondaIdx} — jugadores: ${sala.partida.jugadores.map(j => j.nickname).join(',')}`);
 
     iniciarSubronda(sala.partida);
     io.to(sala.codigo).emit('subrondaIniciada', { subronda: sala.partida.subrondaActual + 1 });
@@ -704,14 +720,20 @@ io.on('connection', (socket) => {
         if (partida.iniciadorIdx >= partida.jugadores.length) {
           partida.iniciadorIdx = 0;
         }
+        if (partida.iniciadorSubrondaIdx >= partida.jugadores.length) {
+          partida.iniciadorSubrondaIdx = 0;
+        }
 
         // Si era su turno y estamos en fase juego, continuar
         if (partida.fase === 'juego') {
           // Si todos los demás ya jugaron (mesa completa ahora)
           if (partida.mesa.length === partida.jugadores.length) {
-            const resolucion = resolverMinironda(partida.mesa);
+            const resolucion = resolverMinironda(partida.mesa, {
+              inversionEscala: partida.inversionEscala || false,
+              esHardcore:      partida.config.hardcore  || false
+            });
             const hayAses = gestionarAses(sala, resolucion);
-            if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional);
+            if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional, resolucion.contextoLogros);
           } else {
             emitirEstado(sala);
             iniciarTurnoTimer(sala);

@@ -18,6 +18,7 @@
         <button class="tab-btn activo" data-tab="basico">Básico</button>
         <button class="tab-btn" data-tab="ases">Ases</button>
         <button class="tab-btn" data-tab="modos">Modos</button>
+        <button class="tab-btn" data-tab="hardcore">💀 Hardcore</button>
       </div>
 
       <div id="tab-basico" class="tab-contenido activo">
@@ -94,6 +95,66 @@
               <tr><td>Ves tu carta en ronda final</td><td>✗</td><td>✓</td><td>✓</td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div id="tab-hardcore" class="tab-contenido oculto">
+        <div class="instruccion-bloque">
+          <h3>💀 Modo Hardcore</h3>
+          <p>Reglas base + jokers, poderes de figuras, Duelo del Prisionero en la ronda final, y un sistema de <strong>maná y logros</strong> con el que puedes ganar vidas extra.</p>
+        </div>
+
+        <div class="instruccion-bloque">
+          <h3>🃏 Jokers</h3>
+          <p>2 jokers en el mazo. Si se juega <strong>un joker</strong>, invierte la escala de valores de esa minironda: el 1 pasa a ser el más alto y el 12 el más bajo. Si se juegan <strong>dos jokers</strong>, se anulan entre sí y la escala vuelve a la normalidad. La inversión solo afecta a la minironda donde se jugó el joker.</p>
+        </div>
+
+        <div class="instruccion-bloque">
+          <h3>🏅 7 de Oros — Árbitro</h3>
+          <p>Si sobrevive en mesa, su jugador puede <strong>intercambiar el valor de dos cartas</strong> en mesa (que no sean la suya) al final de la minironda, decidiendo prácticamente quién gana. Se anula si otro jugador tira otro 7.</p>
+        </div>
+
+        <div class="instruccion-bloque">
+          <h3>👑 Rey — Inmunidad Parcial</h3>
+          <p>El Rey no puede ser eliminado por el As de Espadas, pero sí puede ser <strong>anulado por otro Rey</strong>.</p>
+        </div>
+
+        <div class="instruccion-bloque">
+          <h3>⚔️ El Duelo del Prisionero</h3>
+          <p>En la ronda final (1 carta), dos jugadores al azar se enfrentan antes de apostar. Si <strong>ambos colaboran</strong>, ganan +2 maná cada uno y descubren si su carta es mayor o menor que la del rival. Si <strong>uno traiciona</strong> y el otro colabora, el traidor descubre cuánto mayor es su carta y el colaborador pierde 1 vida. Si <strong>ambos traicionan</strong>, pierden 1 maná cada uno sin información.</p>
+        </div>
+
+        <div class="instruccion-bloque">
+          <h3>✨ Maná y vidas extra</h3>
+          <p>Cada jugador tiene una barra de maná. Conseguir logros suma maná (ver tabla). Al llegar a <strong>5 de maná</strong>, ganas 1 vida automáticamente y la barra se resetea (máximo 7 vidas). El maná se conserva entre subrondas si no llega a 5.</p>
+        </div>
+
+        <div class="instruccion-bloque">
+          <h3>🎯 Tabla de logros</h3>
+          <table class="tabla-modos tabla-logros">
+            <thead><tr><th>Logro</th><th>Cómo conseguirlo</th><th>Maná</th></tr></thead>
+            <tbody>
+              <tr><td>🏔️ Último en Pie</td><td>Ganar una minironda siendo la última carta viva tras anulaciones</td><td>+1</td></tr>
+              <tr><td>🎨 Pureza</td><td>Ganar una minironda donde todas las cartas jugadas son del mismo palo</td><td>+1</td></tr>
+              <tr><td>👑 Regicida</td><td>Anular un Rey con otro Rey</td><td>+1</td></tr>
+              <tr><td>🛡️ Intocable</td><td>Sobrevivir con un As sin ser anulado en mesa de 4+ jugadores</td><td>+1</td></tr>
+              <tr><td>🔁 Tercer Acto</td><td>Ser el tercero en tirar el mismo número, resucitando una carta anulada</td><td>+1</td></tr>
+              <tr><td>👻 Fantasma</td><td>Apostar 0, cumplirlo, y tener en mano al menos una Sota o superior</td><td>+1</td></tr>
+              <tr><td>🔪 Filo de la Navaja</td><td>Ser el último en apostar y elegir el número más restrictivo posible</td><td>+1</td></tr>
+              <tr><td>🎯 Cazador de Ases</td><td>Anular el as rival con tu propio as antes de que actúe</td><td>+1</td></tr>
+              <tr><td>🃏 Caos Controlado</td><td>Anular un joker con otro joker</td><td>+1</td></tr>
+              <tr><td>🔮 Vidente</td><td>Acertar la apuesta exacta en la subronda de 1 carta</td><td>+1</td></tr>
+              <tr><td>🌈 Harmonía</td><td>Todos los jugadores tiran del mismo palo en una minironda — todos suman</td><td>+1</td></tr>
+              <tr><td>🏅 El Rey Detrás del Rey</td><td>Usar el 7 de Oros para hacer ganar a alguien que iba perdiendo</td><td>+1</td></tr>
+              <tr><td>❤️‍🔥 Reanimador</td><td>Dar una vida a un compañero eliminado</td><td>+2</td></tr>
+              <tr><td>💔 Agonía</td><td>Sobrevivir siendo el único jugador con 1 vida durante una subronda completa</td><td>+2</td></tr>
+              <tr><td>🔥 Racha Perfecta</td><td>Acertar la apuesta exacta tres subrondas consecutivas</td><td>+2</td></tr>
+              <tr><td>🔃 Lo más bajo es lo más alto</td><td>Ganar una minironda con el 1 cuando los jokers han invertido la escala</td><td>+2</td></tr>
+              <tr><td>🎓 Mentor</td><td>Que el jugador que reanimaste gane la partida</td><td>+3</td></tr>
+              <tr><td>💎 Indestructible</td><td>Aguantar 5 subrondas consecutivas sin perder ni una vida</td><td>+5</td></tr>
+            </tbody>
+          </table>
+          <p class="tabla-logros-nota">5 de maná = 1 vida extra (máximo 7 vidas)</p>
         </div>
       </div>
 
