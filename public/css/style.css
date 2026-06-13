@@ -206,7 +206,8 @@ button:disabled {
   padding: 0.6rem 1rem; border-radius: 10px;
   font-size: 0.85rem; color: var(--gris);
   backdrop-filter: blur(4px);
-  gap: 1rem;
+  gap: 0.5rem 1rem;
+  flex-wrap: wrap;
 }
 #info-subronda { font-family: 'Cinzel', serif; font-size: 0.9rem; color: var(--blanco); }
 #info-fase { color: var(--rojo); font-weight: 600; font-size: 0.85rem; }
@@ -231,6 +232,8 @@ button:disabled {
   font-size: 0.82rem;
   display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
   min-width: 90px;
+  width: 128px;
+  max-width: 100%;
   transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
   animation: slideUp 0.3s ease both;
 }
@@ -1257,6 +1260,7 @@ button:disabled {
   align-items: center;
   gap: 0.4rem;
   width: 100%;
+  min-width: 0;
   margin: 0.35rem 0;
 }
 .mana-label {
@@ -1266,6 +1270,7 @@ button:disabled {
 }
 .mana-track {
   flex: 1;
+  min-width: 0; /* permite encogerse en flex containers estrechos (rivales móvil) */
   height: 8px;
   background: rgba(255,255,255,0.08);
   border-radius: 4px;
@@ -1435,6 +1440,21 @@ button:disabled {
   .notificacion-logro { width: 100%; max-width: 320px; }
 }
 
+/* Mobile portrait: ajuste final — notificaciones centradas, con margen para
+   no chocar con el panel de reacciones (derecha) ni el chat (izquierda),
+   ambos reposicionados arriba en este breakpoint. Va DESPUÉS del bloque de
+   480px para tener prioridad sobre left/right: 8px. */
+@media (max-width: 500px) and (orientation: portrait) {
+  #contenedor-logros {
+    top: 4.5rem;
+    left: 56px; right: 56px;
+    max-width: none;
+    align-items: center;
+    z-index: 95; /* por debajo del chat (100), por encima del contenido */
+  }
+  .notificacion-logro { width: 100%; max-width: 280px; }
+}
+
 /* ════════════════════════════════════════════════════════════════════════════
    DUELO DEL PRISIONERO
    ════════════════════════════════════════════════════════════════════════════ */
@@ -1575,8 +1595,21 @@ button:disabled {
 .duelo-tabla-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
+  grid-template-areas:
+    "vacia      rival-colabora  rival-traiciona"
+    "tu-colab   cc              ct"
+    "tu-trai    tc              tt";
   gap: 0.35rem;
 }
+.duelo-area-vacia           { grid-area: vacia; }
+.duelo-area-rival-colabora  { grid-area: rival-colabora; }
+.duelo-area-rival-traiciona { grid-area: rival-traiciona; }
+.duelo-area-tu-colaboras    { grid-area: tu-colab; }
+.duelo-area-tu-traicionas   { grid-area: tu-trai; }
+.duelo-area-cc { grid-area: cc; }
+.duelo-area-ct { grid-area: ct; }
+.duelo-area-tc { grid-area: tc; }
+.duelo-area-tt { grid-area: tt; }
 .duelo-celda {
   font-size: 0.68rem;
   padding: 0.45rem 0.35rem;
@@ -1664,8 +1697,53 @@ button:disabled {
   .duelo-avatar, .duelo-avatar-svg, .duelo-avatar-svg svg,
   .duelo-avatar-placeholder { width: 48px !important; height: 48px !important; }
   .duelo-timer { font-size: 1.7rem; }
-  .duelo-tabla-grid { font-size: 0.6rem; }
-  .duelo-celda { font-size: 0.6rem; padding: 0.3rem; }
   .duelo-nombre { font-size: 0.8rem; }
   .btn-duelo { font-size: 0.85rem; padding: 0.65rem; }
+
+  /* Reordenar la tabla del duelo en 1 columna: cada bloque "Tú X" actúa
+     como separador de sección, y cada resultado lleva su contexto de rival
+     inline mediante ::before, evitando una grid 3x3 ilegible en pantallas
+     estrechas. */
+  .duelo-tabla-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "tu-colab"
+      "cc"
+      "ct"
+      "tu-trai"
+      "tc"
+      "tt";
+    gap: 0.4rem;
+  }
+  .duelo-area-vacia,
+  .duelo-area-rival-colabora,
+  .duelo-area-rival-traiciona {
+    display: none;
+  }
+  .duelo-celda-cabecera {
+    background: rgba(240,192,64,0.08);
+    color: var(--dorado);
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 0.4rem;
+  }
+  .duelo-celda-resultado {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    font-size: 0.7rem;
+    padding: 0.5rem 0.6rem;
+    gap: 0.2rem;
+  }
+  .duelo-area-cc::before { content: "Si rival 🤝 colabora:"; }
+  .duelo-area-ct::before { content: "Si rival 🗡️ traiciona:"; }
+  .duelo-area-tc::before { content: "Si rival 🤝 colabora:"; }
+  .duelo-area-tt::before { content: "Si rival 🗡️ traiciona:"; }
+  .duelo-celda-resultado::before {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
 }

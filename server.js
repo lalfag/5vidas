@@ -10,7 +10,8 @@ const {
   registrarEleccionDuelo, resolverDuelo,
   jugarCarta, aplicar7Oros, espiarCarta, vistaPublica,
   aplicarMana, comprobarLogrosMinironda, comprobarLogrosSubronda,
-  CARTAS_POR_SUBRONDA, CONFIG_MODALIDAD, LOGROS
+  CARTAS_POR_SUBRONDA, CONFIG_MODALIDAD, LOGROS,
+  encontrarSiguienteSinApostar, encontrarSiguienteSinJugar
 } = require('./game/game');
 const {
   resolverMinironda, aplicarAsOros, aplicarAsEspadas,
@@ -701,6 +702,13 @@ io.on('connection', (socket) => {
         console.log(`[DISCONNECT] ${jugador.nickname} se ha ido durante la partida`);
         io.to(sala.codigo).emit('jugadorDesconectado', { nickname: jugador.nickname });
 
+        const eraSuTurnoJuego    = partida.fase === 'juego'    && partida.jugadores[partida.turnoIdx]?.id === socket.id;
+        const habiaApostado      = jugador.apuesta !== null;
+
+        // Quitar también su jugada de la mesa si ya había jugado esta minironda
+        const jugadaEnMesaIdx = partida.mesa.findIndex(m => m.jugadorId === socket.id);
+        if (jugadaEnMesaIdx !== -1) partida.mesa.splice(jugadaEnMesaIdx, 1);
+
         // Eliminar de la partida
         partida.jugadores.splice(jugadorIdx, 1);
         limpiarTurnoTimer(sala.codigo);
@@ -713,10 +721,12 @@ io.on('connection', (socket) => {
           return;
         }
 
-        // Ajustar turnoIdx si hacía falta
-        if (partida.turnoIdx >= partida.jugadores.length) {
-          partida.turnoIdx = 0;
+        // Si había apostado, su apuesta ya no cuenta en el recuento
+        if (habiaApostado) {
+          partida.apuestasRealizadas = Math.max(0, partida.apuestasRealizadas - 1);
         }
+
+        // Recalcular iniciadorIdx / iniciadorSubrondaIdx por si quedaron fuera de rango
         if (partida.iniciadorIdx >= partida.jugadores.length) {
           partida.iniciadorIdx = 0;
         }
@@ -724,10 +734,31 @@ io.on('connection', (socket) => {
           partida.iniciadorSubrondaIdx = 0;
         }
 
-        // Si era su turno y estamos en fase juego, continuar
-        if (partida.fase === 'juego') {
-          // Si todos los demás ya jugaron (mesa completa ahora)
-          if (partida.mesa.length === partida.jugadores.length) {
+        // ── Recalcular turnoIdx según la fase, basándonos en QUIÉN falta por actuar ──
+        if (partida.fase === 'apuestas') {
+          // El turno pasa al primer jugador (en orden de mesa) que aún no haya apostado
+          partida.turnoIdx = encontrarSiguienteSinApostar(partida);
+
+          // Si con esto ya han apostado todos los que quedan, pasar a juego
+          if (partida.apuestasRealizadas >= partida.jugadores.length) {
+            partida.fase     = 'juego';
+            partida.turnoIdx = partida.iniciadorIdx;
+            if (partida.mesa.length === partida.jugadores.length) {
+              const resolucion = resolverMinironda(partida.mesa, {
+                inversionEscala: partida.inversionEscala || false,
+                esHardcore:      partida.config.hardcore  || false
+              });
+              const hayAses = gestionarAses(sala, resolucion);
+              if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional, resolucion.contextoLogros);
+              return;
+            }
+          }
+          emitirEstado(sala);
+          if (partida.fase === 'juego') iniciarTurnoTimer(sala);
+
+        } else if (partida.fase === 'juego') {
+          // Si todos los que quedan ya jugaron su carta esta minironda
+          if (partida.mesa.length === partida.jugadores.length && partida.mesa.length > 0) {
             const resolucion = resolverMinironda(partida.mesa, {
               inversionEscala: partida.inversionEscala || false,
               esHardcore:      partida.config.hardcore  || false
@@ -735,14 +766,41 @@ io.on('connection', (socket) => {
             const hayAses = gestionarAses(sala, resolucion);
             if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional, resolucion.contextoLogros);
           } else {
+            if (eraSuTurnoJuego) {
+              // El turno pasa a quien le sigue en la mesa (el siguiente que no haya jugado)
+              partida.turnoIdx = encontrarSiguienteSinJugar(partida, jugadorIdx);
+            } else if (partida.turnoIdx > jugadorIdx) {
+              // El jugador eliminado estaba antes en el array: el índice se desplaza una posición
+              partida.turnoIdx = partida.turnoIdx - 1;
+            }
+            // Asegurar rango válido
+            if (partida.turnoIdx >= partida.jugadores.length || partida.turnoIdx < 0) {
+              partida.turnoIdx = encontrarSiguienteSinJugar(partida, null);
+            }
             emitirEstado(sala);
             iniciarTurnoTimer(sala);
           }
-        } else if (partida.fase === 'apuestas') {
-          // Si todos los demás ya apostaron
-          if (partida.apuestasRealizadas >= partida.jugadores.length) {
-            partida.fase = 'juego';
-            partida.turnoIdx = partida.iniciadorIdx;
+        } else if (partida.fase === 'duelo' && partida.duelo && !partida.duelo.resuelto) {
+          const duelo = partida.duelo;
+          if (duelo.jugadorAId === socket.id || duelo.jugadorBId === socket.id) {
+            // Uno de los participantes del duelo se desconectó: el jugador ya
+            // fue eliminado de partida.jugadores, así que resolverDuelo no
+            // puede aplicar efectos. Marcamos el duelo como resuelto sin
+            // efectos y avisamos al resto para cerrar el overlay.
+            if (dueloTimers[sala.codigo]) {
+              clearTimeout(dueloTimers[sala.codigo]);
+              delete dueloTimers[sala.codigo];
+            }
+            duelo.resuelto = true;
+            partida.fase    = 'apuestas';
+            io.to(sala.codigo).emit('dueloResuelto', {
+              jugadorAId: duelo.jugadorAId,
+              jugadorBId: duelo.jugadorBId,
+              eleccionA:  duelo.eleccionA || 'traicionar',
+              eleccionB:  duelo.eleccionB || 'traicionar',
+              efectos:    [],
+              cancelado:  true
+            });
           }
           emitirEstado(sala);
         } else {

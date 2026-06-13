@@ -90,11 +90,12 @@ function crearPartida(jugadores, modalidad = 'clasico') {
       // Estado Hardcore por jugador
       mana:         config.hardcore ? estadoManaInicial() : null
     })),
-    subrondaActual:    0,
-    minirondaActual:   0,
-    fase:              'apuestas',
-    turnoIdx:          0,
-    iniciadorIdx:      0,
+    subrondaActual:        0,
+    minirondaActual:       0,
+    fase:                  'apuestas',
+    turnoIdx:              0,
+    iniciadorIdx:          0,      // quién inicia la minironda ACTUAL (cambia con cada baza)
+    iniciadorSubrondaIdx:  0,      // quién inicia la PRIMERA minironda de la subronda (rota cada subronda)
     mesa:              [],
     apuestasRealizadas: 0,
     historial:         [],
@@ -128,6 +129,9 @@ function iniciarSubronda(partida) {
   partida.fase               = 'apuestas';
   partida.mesa               = [];
   partida.apuestasRealizadas = 0;
+  // El iniciador de la subronda es el rotativo; se aplica tanto a iniciadorIdx
+  // (minironda actual) como a turnoIdx (orden de apuestas/juego)
+  partida.iniciadorIdx       = partida.iniciadorSubrondaIdx;
   partida.turnoIdx           = partida.iniciadorIdx;
   partida.inversionEscala    = false;
   partida.duelo              = null;
@@ -277,8 +281,10 @@ function apuestaValida(partida, jugadorId, cantidad) {
     return { valida: false, motivo: `Debe ser entre 0 y ${numCartas}` };
   }
 
-  // En ronda final de clásico (simultánea) no hay restricción del último
-  if (!esRondaFinal || partida.modalidad !== 'clasico') {
+  // La restricción del "último apostador" (que la suma no sea igual a numCartas)
+  // NUNCA aplica en la ronda final (1 carta), sea cual sea la modalidad:
+  // con numCartas=1 esa regla colapsaría y forzaría siempre la misma apuesta.
+  if (!esRondaFinal) {
     const esUltimo = partida.apuestasRealizadas === partida.jugadores.length - 1;
     if (esUltimo) {
       const sumaActual = partida.jugadores.reduce((acc, j) => acc + (j.apuesta ?? 0), 0);
@@ -628,6 +634,34 @@ function siguienteTurno(idx, total) {
   return (idx + 1) % total;
 }
 
+// Encuentra el índice del primer jugador (en orden de mesa) que aún no ha
+// apostado. Si se indica desdeIdx, empieza a buscar desde esa posición
+// (inclusive) y da la vuelta circularmente; si no se indica, empieza desde 0.
+// Devuelve 0 si todos han apostado (caso ya gestionado aparte por el caller).
+function encontrarSiguienteSinApostar(partida, desdeIdx = null) {
+  const total = partida.jugadores.length;
+  const inicio = (desdeIdx === null) ? 0 : ((desdeIdx % total) + total) % total;
+  for (let i = 0; i < total; i++) {
+    const idx = (inicio + i) % total;
+    if (partida.jugadores[idx].apuesta === null) return idx;
+  }
+  return 0;
+}
+
+// Encuentra el índice del primer jugador (en orden de mesa) que aún no ha
+// jugado carta en la mesa actual. Mismo comportamiento circular que arriba.
+function encontrarSiguienteSinJugar(partida, desdeIdx = null) {
+  const total = partida.jugadores.length;
+  const inicio = (desdeIdx === null) ? 0 : ((desdeIdx % total) + total) % total;
+  for (let i = 0; i < total; i++) {
+    const idx = (inicio + i) % total;
+    const jugadorId = partida.jugadores[idx].id;
+    const yaJugo = partida.mesa.some(m => m.jugadorId === jugadorId);
+    if (!yaJugo) return idx;
+  }
+  return 0;
+}
+
 function log(partida, msg) {
   partida.historial.push(msg);
   console.log(`[PARTIDA] ${msg}`);
@@ -733,5 +767,7 @@ module.exports = {
   CARTAS_POR_SUBRONDA,
   CONFIG_MODALIDAD,
   LOGROS,
-  MANA_PARA_VIDA
+  MANA_PARA_VIDA,
+  encontrarSiguienteSinApostar,
+  encontrarSiguienteSinJugar
 };

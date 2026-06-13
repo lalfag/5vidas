@@ -850,6 +850,14 @@ if (btnDueloTraicionar) btnDueloTraicionar.addEventListener('click', () => elegi
 function mostrarResultadoDuelo(resultado) {
   if (dueloTimerInterval) clearInterval(dueloTimerInterval);
 
+  // Si el duelo se canceló porque un participante se desconectó,
+  // cerrar el overlay sin mostrar resultados detallados
+  if (resultado && resultado.cancelado) {
+    $('overlay-duelo').classList.add('oculto');
+    mostrarMsgJuego('⚔️ El duelo se canceló — un jugador se desconectó');
+    return;
+  }
+
   const estado = miEstado;
   const jugA = estado?.jugadores.find(j => j.id === resultado.jugadorAId);
   const jugB = estado?.jugadores.find(j => j.id === resultado.jugadorBId);
