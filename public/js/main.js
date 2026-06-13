@@ -502,6 +502,14 @@ function jugarCarta(idx) {
   });
 }
 
+function mostrarMsgJuego(texto, duracion = 4000) {
+  const el = $('msg-juego');
+  if (!el) return;
+  el.textContent = texto;
+  clearTimeout(el._timeout);
+  el._timeout = setTimeout(() => { el.textContent = ''; }, duracion);
+}
+
 function mostrarError(msg) {
   const el = $('msg-error');
   if (!el) return;
@@ -571,7 +579,8 @@ $('btn-unirse').addEventListener('click', () => {
 const DESCS_MODALIDAD = {
   clasico: 'Modo estándar — apuestas y bazas clásicas',
   twisted: 'Las cartas se juegan boca abajo y se revelan a la vez',
-  chaos:   'Tus cartas se barajan tras apostar — no sabes qué juegas'
+  chaos:   'Tus cartas se barajan tras apostar — no sabes qué juegas',
+  leap:    '🙈 Apuestas a ciegas — ves tus cartas solo después de apostar'
 };
 
 document.querySelectorAll('.btn-modo').forEach(btn => {
@@ -632,6 +641,14 @@ socket.on('partidaIniciada', () => {
 
 socket.on('reaccion', ({ nickname, tipo }) => {
   mostrarReaccionFlotante(nickname, tipo);
+});
+
+socket.on('turnoSkipeado', ({ nickname }) => {
+  mostrarMsgJuego(`⏭ ${nickname} tardó demasiado — turno saltado automáticamente`);
+});
+
+socket.on('jugadorDesconectado', ({ nickname }) => {
+  mostrarMsgJuego(`🔌 ${nickname} se ha desconectado y ha sido eliminado de la partida`);
 });
 
 socket.on('chatMensaje', ({ nickname, texto, id }) => {
@@ -761,6 +778,41 @@ socket.on('subrondaTerminada', ({ resumen }) => {
     tbody.appendChild(tr);
   });
 
+  // Zona de donación de vidas
+  let zonaDonacion = $('zona-donacion');
+  if (!zonaDonacion) {
+    zonaDonacion = document.createElement('div');
+    zonaDonacion.id = 'zona-donacion';
+    $('pantalla-resumen').insertBefore(zonaDonacion, $('btn-siguiente'));
+  }
+  zonaDonacion.innerHTML = '';
+
+  const soyEspectador = miEstado && !miEstado.jugadores.find(j => j.id === miId);
+  const miVidasActuales = miEstado?.jugadores.find(j => j.id === miId)?.vidas ?? 0;
+
+  if (soyEspectador) {
+    // Botón para pedir vida
+    const bocadillo = document.createElement('div');
+    bocadillo.className = 'bocadillo-pedir';
+    bocadillo.innerHTML = `
+      <p>💀 Estás eliminado</p>
+      <button id="btn-pedir-vida">🙏 Pedir una vida</button>
+      <p id="msg-pedir-vida" class="info"></p>
+    `;
+    zonaDonacion.appendChild(bocadillo);
+    $('btn-pedir-vida').addEventListener('click', () => {
+      $('btn-pedir-vida').disabled = true;
+      socket.emit('pedirVida', res => {
+        if (res.error) {
+          $('msg-pedir-vida').textContent = res.error;
+          $('btn-pedir-vida').disabled = false;
+        } else {
+          $('msg-pedir-vida').textContent = '✉️ Petición enviada — esperando que alguien done...';
+        }
+      });
+    });
+  }
+
   const esCreador = miSala && miSala.creador === miId;
   if (esCreador) {
     $('btn-siguiente').classList.remove('oculto');
@@ -769,6 +821,65 @@ socket.on('subrondaTerminada', ({ resumen }) => {
     $('btn-siguiente').classList.add('oculto');
     $('msg-resumen').textContent = 'Esperando al creador...';
   }
+});
+
+// Llega una petición de vida — mostrar a los jugadores vivos
+socket.on('peticionVida', ({ solicitanteId, nickname }) => {
+  let zonaDonacion = $('zona-donacion');
+  if (!zonaDonacion) return;
+
+  // Evitar duplicados
+  if (document.getElementById(`peticion-${solicitanteId}`)) return;
+
+  const miVidasActuales = miEstado?.jugadores.find(j => j.id === miId)?.vidas ?? 0;
+  const soyVivo = miEstado?.jugadores.some(j => j.id === miId);
+  if (!soyVivo) return; // espectadores no ven el botón de donar
+
+  const peticion = document.createElement('div');
+  peticion.id = `peticion-${solicitanteId}`;
+  peticion.className = 'bocadillo-peticion';
+  peticion.innerHTML = `
+    <span>🙏 <strong>${nickname}</strong> pide una vida</span>
+    ${miVidasActuales > 1
+      ? `<button class="btn-donar" data-id="${solicitanteId}" data-nick="${nickname}">❤️ Donar</button>`
+      : `<span class="donar-imposible">Sin vidas para donar</span>`
+    }
+  `;
+  zonaDonacion.appendChild(peticion);
+});
+
+// Confirmación de donación
+socket.on('vidaDonada', ({ donanteId, donanteNick, donantesVidas, receptorId, receptorNick }) => {
+  // Eliminar la petición de la UI
+  const peticion = document.getElementById(`peticion-${receptorId}`);
+  if (peticion) peticion.remove();
+
+  // Mensaje informativo
+  const zonaDonacion = $('zona-donacion');
+  if (zonaDonacion) {
+    const aviso = document.createElement('div');
+    aviso.className = 'bocadillo-donado';
+    aviso.textContent = `❤️ ${donanteNick} le dio una vida a ${receptorNick}`;
+    zonaDonacion.appendChild(aviso);
+  }
+
+  mostrarMsgJuego(`❤️ ${donanteNick} → ${receptorNick}: vida donada`);
+});
+
+// Delegación para botones donar (creados dinámicamente)
+document.addEventListener('click', e => {
+  if (!e.target.matches('.btn-donar')) return;
+  const solicitanteId = e.target.dataset.id;
+  const nick = e.target.dataset.nick;
+  e.target.disabled = true;
+  e.target.textContent = '...';
+  socket.emit('donarVida', { solicitanteId }, res => {
+    if (res.error) {
+      e.target.disabled = false;
+      e.target.textContent = '❤️ Donar';
+      mostrarMsgJuego(`⚠️ ${res.error}`);
+    }
+  });
 });
 
 socket.on('subrondaIniciada', () => irA('juego'));

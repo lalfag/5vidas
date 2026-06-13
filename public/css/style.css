@@ -951,3 +951,113 @@ button:disabled {
   transition: background 0.15s;
 }
 #chat-enviar:hover { background: rgba(240,192,64,0.15); }
+
+/* ── MOBILE PORTRAIT: reacciones arriba derecha, chat arriba izquierda ── */
+@media (max-width: 500px) and (orientation: portrait) {
+  #panel-reacciones {
+    bottom: auto;
+    top: 4.5rem;
+    right: 0.4rem;
+    max-width: 44px;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .btn-reaccion {
+    width: 34px;
+    height: 34px;
+  }
+  .btn-reaccion svg {
+    width: 18px;
+    height: 18px;
+  }
+  #chat-container {
+    bottom: auto;
+    top: 4.5rem;
+    left: 0.4rem;
+  }
+  #chat-panel {
+    width: 220px;
+  }
+}
+
+/* ── DONACIÓN DE VIDAS ── */
+#zona-donacion {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0.8rem 0;
+}
+
+.bocadillo-pedir,
+.bocadillo-peticion,
+.bocadillo-donado {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+  color: #ddd;
+  font-family: 'Inter', sans-serif;
+}
+
+.bocadillo-pedir {
+  flex-direction: column;
+  align-items: flex-start;
+  border-color: rgba(233,69,96,0.3);
+  background: rgba(233,69,96,0.08);
+}
+.bocadillo-pedir p { margin: 0; }
+
+#btn-pedir-vida {
+  background: linear-gradient(135deg, #e94560, #c0003a);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+#btn-pedir-vida:hover { opacity: 0.85; transform: scale(1.03); }
+#btn-pedir-vida:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+.bocadillo-peticion {
+  border-color: rgba(240,192,64,0.3);
+  background: rgba(240,192,64,0.07);
+}
+
+.btn-donar {
+  background: linear-gradient(135deg, #e94560, #c0003a);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.btn-donar:hover { opacity: 0.85; transform: scale(1.03); }
+.btn-donar:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+.donar-imposible {
+  font-size: 0.75rem;
+  color: #888;
+  font-style: italic;
+}
+
+.bocadillo-donado {
+  border-color: rgba(76,175,80,0.3);
+  background: rgba(76,175,80,0.08);
+  color: #a5d6a7;
+  justify-content: center;
+  font-weight: 500;
+}

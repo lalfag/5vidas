@@ -80,6 +80,10 @@
           <p>Ves tus cartas y apuestas con normalidad. Cuando todos han apostado, tu mano se <strong>baraja aleatoriamente</strong> — ya no sabes qué carta estás jugando. En la ronda final sí ves tu carta y puedes <strong>espiar una carta rival</strong> (con 3+ jugadores).</p>
         </div>
         <div class="instruccion-bloque">
+          <h3>🙈 Leap of Faith</h3>
+          <p>Apuestas <strong>sin ver tus cartas</strong>. Una vez todos han apostado, se revelan las manos y se juega como el clásico. Pura intuición.</p>
+        </div>
+        <div class="instruccion-bloque">
           <h3>📊 Comparativa</h3>
           <table class="tabla-modos">
             <thead><tr><th></th><th>Clásico</th><th>Twisted</th><th>Chaos</th></tr></thead>
@@ -120,10 +124,11 @@
     <p id="msg-sala" class="info"></p>
     <div id="selector-modalidad" class="oculto" style="width:100%;display:flex;flex-direction:column;gap:0.5rem">
       <p style="color:#aaa;font-size:0.85rem;text-align:center">Modo de juego</p>
-      <div style="display:flex;gap:0.5rem;width:100%">
+      <div style="display:flex;gap:0.5rem;width:100%;flex-wrap:wrap">
         <button id="btn-modo-clasico" class="btn-modo activo" data-modo="clasico">⚔️ Clásico</button>
         <button id="btn-modo-twisted" class="btn-modo secundario" data-modo="twisted">🃏 Twisted</button>
         <button id="btn-modo-chaos"   class="btn-modo secundario" data-modo="chaos">🌀 Chaos</button>
+        <button id="btn-modo-leap"    class="btn-modo secundario" data-modo="leap">🙈 Leap</button>
       </div>
       <p id="desc-modalidad" style="color:#aaa;font-size:0.8rem;text-align:center">Modo estándar — apuestas y bazas clásicas</p>
     </div>

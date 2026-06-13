@@ -5,22 +5,32 @@ const CARTAS_POR_SUBRONDA = [5, 4, 3, 2, 1];
 // Configuración de cada modalidad
 const CONFIG_MODALIDAD = {
   clasico: {
-    cartasBocaAbajo:      false,  // cartas visibles al jugar
-    barajarTrasApuestas:  false,  // mano se baraja tras apostar
-    rondaFinalVerPropia:  false,  // en ronda final NO ves tu carta
-    rondaFinalEspiar:     false   // en ronda final NO puedes espiar
+    cartasBocaAbajo:      false,
+    barajarTrasApuestas:  false,
+    rondaFinalVerPropia:  false,
+    rondaFinalEspiar:     false,
+    cartasOcultasAlApostar: false  // ves tus cartas al apostar
   },
   twisted: {
-    cartasBocaAbajo:      true,   // cartas boca abajo hasta que todos juegan
+    cartasBocaAbajo:      true,
     barajarTrasApuestas:  false,
-    rondaFinalVerPropia:  true,   // en ronda final SÍ ves tu carta
-    rondaFinalEspiar:     false
+    rondaFinalVerPropia:  true,
+    rondaFinalEspiar:     false,
+    cartasOcultasAlApostar: false
   },
   chaos: {
     cartasBocaAbajo:      false,
-    barajarTrasApuestas:  true,   // mano se baraja tras apostar
-    rondaFinalVerPropia:  true,   // en ronda final SÍ ves tu carta
-    rondaFinalEspiar:     true    // en ronda final puedes espiar una carta rival
+    barajarTrasApuestas:  true,
+    rondaFinalVerPropia:  true,
+    rondaFinalEspiar:     true,
+    cartasOcultasAlApostar: false
+  },
+  leap: {
+    cartasBocaAbajo:      false,  // las cartas se juegan visibles
+    barajarTrasApuestas:  false,
+    rondaFinalVerPropia:  false,
+    rondaFinalEspiar:     false,
+    cartasOcultasAlApostar: true  // NO ves tus cartas al apostar
   }
 };
 
@@ -241,9 +251,11 @@ function vistaPublica(partida, miId) {
           if (j.id === miId) return verPropia ? j.mano : null;
           return j.mano;
         }
-        // CHAOS: si la mano está barajada, no revelar las cartas propias
         if (j.id === miId) {
-          if (partida.config.barajarTrasApuestas && j.manoBarajada) return null;
+          // LEAP: ocultar mano durante fase de apuestas
+          if (config.cartasOcultasAlApostar && partida.fase === 'apuestas') return null;
+          // CHAOS: si la mano está barajada, no revelar
+          if (config.barajarTrasApuestas && j.manoBarajada) return null;
           return j.mano;
         }
         return null;

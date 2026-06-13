@@ -17,11 +17,45 @@ const {
 const app = express();
 const httpServer = http.createServer(app);
 const io = new Server(httpServer);
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.static('public'));
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
+
+const TURN_TIMEOUT_MS = 60000; // 60s sin jugar → skip automático
+const turnoTimers = {}; // codigoSala → timeout
+
+function limpiarTurnoTimer(codigoSala) {
+  if (turnoTimers[codigoSala]) {
+    clearTimeout(turnoTimers[codigoSala]);
+    delete turnoTimers[codigoSala];
+  }
+}
+
+function iniciarTurnoTimer(sala) {
+  limpiarTurnoTimer(sala.codigo);
+  if (!sala.partida || sala.partida.fase !== 'juego') return;
+
+  turnoTimers[sala.codigo] = setTimeout(() => {
+    if (!sala.partida || sala.partida.fase !== 'juego') return;
+    const jugadorActual = sala.partida.jugadores[sala.partida.turnoIdx];
+    if (!jugadorActual) return;
+    console.log(`[TIMEOUT] Skip automático de ${jugadorActual.nickname}`);
+    // Jugar primera carta automáticamente
+    const resultado = jugarCarta(sala.partida, jugadorActual.id, 0);
+    if (resultado.error) return;
+    io.to(sala.codigo).emit('turnoSkipeado', { nickname: jugadorActual.nickname });
+    emitirEstado(sala);
+    if (resultado.todosJugaron) {
+      const resolucion = resolverMinironda(sala.partida.mesa);
+      const hayAses = gestionarAses(sala, resolucion);
+      if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional);
+    } else {
+      iniciarTurnoTimer(sala);
+    }
+  }, TURN_TIMEOUT_MS);
+}
 
 function emitirEstado(sala) {
   sala.partida.jugadores.forEach(j => {
@@ -252,6 +286,8 @@ io.on('connection', (socket) => {
     const resultado = registrarApuesta(sala.partida, socket.id, cantidad);
     if (resultado.error) return callback({ error: resultado.error });
     emitirEstado(sala);
+    // Si tras apostar empieza la fase de juego, arrancar el timer
+    if (sala.partida.fase === 'juego') iniciarTurnoTimer(sala);
     callback({ ok: true });
   });
 
@@ -270,12 +306,19 @@ io.on('connection', (socket) => {
     const idxReal  = esRondaFinal ? 0 : cartaIdx;
     const resultado = jugarCarta(partida, socket.id, idxReal);
     if (resultado.error) return callback({ error: resultado.error });
+    limpiarTurnoTimer(sala.codigo);
     emitirEstado(sala);
 
     if (resultado.todosJugaron) {
-      const resolucion = resolverMinironda(sala.partida.mesa);
-      const hayAses    = gestionarAses(sala, resolucion);
-      if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional);
+      // TWISTED: delay de 1.5s para que los jugadores vean las cartas girar
+      const delayReveal = partida.config.cartasBocaAbajo ? 1500 : 0;
+      setTimeout(() => {
+        const resolucion = resolverMinironda(sala.partida.mesa);
+        const hayAses = gestionarAses(sala, resolucion);
+        if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional);
+      }, delayReveal);
+    } else {
+      iniciarTurnoTimer(sala);
     }
     callback({ ok: true });
   });
@@ -316,6 +359,9 @@ io.on('connection', (socket) => {
     if (sala.creador !== socket.id) return callback({ error: 'Solo el creador' });
     if (sala.partida.fase !== 'esperandoSiguiente') return callback({ error: 'No es el momento' });
 
+    // Resetear flag de petición de vida
+    if (sala.espectadores) sala.espectadores.forEach(j => { j.pidioVidaEstaRonda = false; });
+
     console.log(`[TURNO] Subronda ${sala.partida.subrondaActual + 1} — iniciadorIdx: ${sala.partida.iniciadorIdx} — jugadores: ${sala.partida.jugadores.map(j => j.nickname).join(',')}`);
 
     iniciarSubronda(sala.partida);
@@ -330,6 +376,55 @@ io.on('connection', (socket) => {
     const resultado = espiarCarta(sala.partida, socket.id, objetivoId);
     if (resultado.error) return callback(resultado);
     callback({ ok: true, carta: resultado.carta });
+  });
+
+  socket.on('pedirVida', (callback) => {
+    const sala = obtenerSalaPorSocket(socket.id);
+    if (!sala?.partida) return callback({ error: 'Sin partida activa' });
+    if (sala.partida.fase !== 'esperandoSiguiente') return callback({ error: 'Solo entre subrondas' });
+
+    // Buscar al espectador
+    const espectador = sala.espectadores?.find(j => j.id === socket.id);
+    if (!espectador) return callback({ error: 'Solo los espectadores pueden pedir vida' });
+    if (espectador.pidioVidaEstaRonda) return callback({ error: 'Ya pediste vida esta subronda' });
+
+    espectador.pidioVidaEstaRonda = true;
+    io.to(sala.codigo).emit('peticionVida', { solicitanteId: socket.id, nickname: espectador.nickname });
+    callback({ ok: true });
+  });
+
+  socket.on('donarVida', ({ solicitanteId }, callback) => {
+    const sala = obtenerSalaPorSocket(socket.id);
+    if (!sala?.partida) return callback({ error: 'Sin partida activa' });
+    if (sala.partida.fase !== 'esperandoSiguiente') return callback({ error: 'Solo entre subrondas' });
+
+    const donante = sala.partida.jugadores.find(j => j.id === socket.id);
+    if (!donante) return callback({ error: 'No eres un jugador activo' });
+    if (donante.vidas <= 1) return callback({ error: 'No puedes donar, te quedarías sin vidas' });
+
+    const receptor = sala.espectadores?.find(j => j.id === solicitanteId);
+    if (!receptor) return callback({ error: 'El receptor no existe o ya fue resucitado' });
+
+    // Transferir vida
+    donante.vidas -= 1;
+    receptor.vidas = 1;
+    receptor.pidioVidaEstaRonda = true;
+
+    // Sacar al receptor de espectadores y meterlo de vuelta en jugadores
+    sala.espectadores = sala.espectadores.filter(j => j.id !== solicitanteId);
+    receptor.espectador = false;
+    sala.partida.jugadores.push(receptor);
+
+    console.log(`[VIDA] ${donante.nickname} donó una vida a ${receptor.nickname}`);
+
+    io.to(sala.codigo).emit('vidaDonada', {
+      donanteId:       donante.id,
+      donanteNick:     donante.nickname,
+      donantesVidas:   donante.vidas,
+      receptorId:      receptor.id,
+      receptorNick:    receptor.nickname
+    });
+    callback({ ok: true });
   });
 
   socket.on('chatMensaje', ({ texto }) => {
@@ -355,8 +450,67 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    const sala = eliminarJugador(socket.id);
     console.log('[-] Desconectado:', socket.id);
+    const sala = obtenerSalaPorSocket(socket.id);
+    if (!sala) return;
+
+    // Si hay partida activa, gestionar desconexión en juego
+    if (sala.partida && sala.estado === 'jugando') {
+      const partida = sala.partida;
+      const jugadorIdx = partida.jugadores.findIndex(j => j.id === socket.id);
+
+      if (jugadorIdx !== -1) {
+        const jugador = partida.jugadores[jugadorIdx];
+        console.log(`[DISCONNECT] ${jugador.nickname} se ha ido durante la partida`);
+        io.to(sala.codigo).emit('jugadorDesconectado', { nickname: jugador.nickname });
+
+        // Eliminar de la partida
+        partida.jugadores.splice(jugadorIdx, 1);
+        limpiarTurnoTimer(sala.codigo);
+
+        // Si solo queda 1 jugador, terminar partida
+        if (partida.jugadores.length <= 1) {
+          const ganador = partida.jugadores[0] || null;
+          io.to(sala.codigo).emit('partidaTerminada', { ganador });
+          sala.estado = 'terminada';
+          return;
+        }
+
+        // Ajustar turnoIdx si hacía falta
+        if (partida.turnoIdx >= partida.jugadores.length) {
+          partida.turnoIdx = 0;
+        }
+        if (partida.iniciadorIdx >= partida.jugadores.length) {
+          partida.iniciadorIdx = 0;
+        }
+
+        // Si era su turno y estamos en fase juego, continuar
+        if (partida.fase === 'juego') {
+          // Si todos los demás ya jugaron (mesa completa ahora)
+          if (partida.mesa.length === partida.jugadores.length) {
+            const resolucion = resolverMinironda(partida.mesa);
+            const hayAses = gestionarAses(sala, resolucion);
+            if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional);
+          } else {
+            emitirEstado(sala);
+            iniciarTurnoTimer(sala);
+          }
+        } else if (partida.fase === 'apuestas') {
+          // Si todos los demás ya apostaron
+          if (partida.apuestasRealizadas >= partida.jugadores.length) {
+            partida.fase = 'juego';
+            partida.turnoIdx = partida.iniciadorIdx;
+          }
+          emitirEstado(sala);
+        } else {
+          emitirEstado(sala);
+        }
+        return;
+      }
+    }
+
+    // Desconexión en lobby
+    eliminarJugador(socket.id);
     if (sala) io.to(sala.codigo).emit('salaActualizada', sala);
   });
 });
