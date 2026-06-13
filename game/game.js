@@ -40,6 +40,7 @@ function crearPartida(jugadores, modalidad = 'clasico') {
       id:          j.id,
       nickname:    j.nickname,
       vidas:       5,
+      avatar:      j.avatar || null,
       mano:        [],
       apuesta:     null,
       bazasGanadas: 0
@@ -239,6 +240,7 @@ function vistaPublica(partida, miId) {
       id:           j.id,
       nickname:     j.nickname,
       vidas:        j.vidas,
+      avatar:       j.avatar || null,
       apuesta:      esRondaFinal
         ? (todosApostaron || j.id === miId ? j.apuesta : null)
         : j.apuesta,

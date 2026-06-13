@@ -1144,3 +1144,39 @@ button:disabled {
   opacity: 0.4;
   cursor: default;
 }
+
+/* ── AVATAR EN PARTIDA ── */
+.rival-avatar {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+.rival-avatar svg {
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+}
+
+.mi-avatar-inline {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.mi-avatar-inline svg {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+}
+
+/* Fix lobby: cada li centrado con flex */
+#lista-jugadores li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+#lista-jugadores .corona {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
