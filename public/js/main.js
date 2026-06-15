@@ -598,18 +598,38 @@ function renderizarJuego(estado) {
 
   // Panel apuestas
   const panelApuestas = $('panel-apuestas');
-  const apuestaSimultanea = esRondaFinal && estado.modalidad === 'clasico';
-  if (!soyEspectador && estado.fase === 'apuestas' && miJugador.apuesta === null && (apuestaSimultanea || esMiTurno)) {
-    panelApuestas.classList.remove('oculto');
-    renderizarBotonesApuesta(estado);
-  } else {
+  const apuestaSimultanea = esRondaFinal && ['clasico', 'vegas'].includes(estado.modalidad);
+  const esVegas = estado.modalidad === 'vegas';
+
+  // VEGAS: segundo paso del turno — ya aposté bazas pero me falta apostar
+  // monedas. Tiene prioridad sobre el panel de apuestas normal.
+  const esperandoMisMonedas = esVegas && !soyEspectador &&
+    miJugador.apuesta !== null && miJugador.apuestaMonedas === null &&
+    (apuestaSimultanea || esMiTurno);
+
+  if (esperandoMisMonedas) {
     panelApuestas.classList.add('oculto');
+    renderizarPanelMonedas(estado, miJugador);
+  } else {
+    $('panel-monedas')?.classList.add('oculto');
+
+    if (!soyEspectador && estado.fase === 'apuestas' && miJugador.apuesta === null && (apuestaSimultanea || esMiTurno)) {
+      panelApuestas.classList.remove('oculto');
+      renderizarBotonesApuesta(estado);
+    } else {
+      panelApuestas.classList.add('oculto');
+    }
   }
+
+  // VEGAS: mostrar monedas/bancas siempre visibles durante la partida
+  if (esVegas) actualizarPanelEconomiaVegas(estado);
 
   // Mensaje
   const msgJuego = $('msg-juego');
   if (soyEspectador) {
     msgJuego.textContent = '👁️ Modo espectador';
+  } else if (esperandoMisMonedas) {
+    msgJuego.textContent = '🎰 Apostaste tus bazas — ¿cuántas monedas arriesgas?';
   } else if (estado.fase === 'apuestas') {
     if (apuestaSimultanea) {
       msgJuego.textContent = miJugador.apuesta !== null
@@ -637,6 +657,145 @@ function renderizarJuego(estado) {
   // HARDCORE: barra de maná y escala invertida
   actualizarBarraMana(estado);
   actualizarEscalaInvertida(estado);
+}
+
+// VEGAS: panel del segundo paso del turno de apuesta — arriesgar monedas
+// sobre la apuesta de bazas que el jugador acaba de hacer.
+function renderizarPanelMonedas(estado, miJugador) {
+  const panel = $('panel-monedas');
+  if (!panel) return;
+  panel.classList.remove('oculto');
+
+  const saldo = estado.vegas?.monedas?.[miId] ?? 0;
+
+  if (saldo <= 0) {
+    // Sin monedas: se resuelve automáticamente en el servidor con 0, pero
+    // por si el cliente llega a renderizar este estado, informamos y listo
+    panel.innerHTML = `<p>🎰 No tienes monedas para arriesgar esta subronda.</p>`;
+    return;
+  }
+
+  // Evitar reconstruir el slider en cada render si el valor no ha cambiado
+  // (mantiene la posición mientras el usuario interactúa)
+  if (panel.dataset.saldo !== String(saldo)) {
+    panel.dataset.saldo = String(saldo);
+    panel.innerHTML = `
+      <p>🎰 Apostaste <strong>${miJugador.apuesta}</strong> bazas. ¿Cuántas monedas arriesgas? (1–${saldo})</p>
+      <p style="font-size:0.8rem;color:var(--gris)">Si aciertas tu apuesta exacta, las doblas. Si fallas, las pierdes.</p>
+      <div style="display:flex;align-items:center;gap:0.6rem;justify-content:center;flex-wrap:wrap">
+        <input type="range" id="slider-monedas" min="1" max="${saldo}" value="1" style="flex:1;min-width:140px">
+        <span id="valor-monedas" style="font-weight:700;color:var(--dorado);min-width:3ch;text-align:right">1</span>
+        <span>🪙</span>
+      </div>
+      <div style="display:flex;gap:0.4rem;justify-content:center;flex-wrap:wrap;margin-top:0.4rem">
+        <button class="btn-monedas-rapido" data-pct="0">Mín. (1)</button>
+        <button class="btn-monedas-rapido" data-pct="0.25">25%</button>
+        <button class="btn-monedas-rapido" data-pct="0.5">50%</button>
+        <button class="btn-monedas-rapido" data-pct="1">Todo (${saldo})</button>
+      </div>
+      <button id="btn-confirmar-monedas" style="margin-top:0.6rem">Confirmar apuesta 🎰</button>
+    `;
+
+    const slider = $('slider-monedas');
+    const valorEl = $('valor-monedas');
+    slider.addEventListener('input', () => { valorEl.textContent = slider.value; });
+
+    panel.querySelectorAll('.btn-monedas-rapido').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pct = parseFloat(btn.dataset.pct);
+        const valor = pct === 0 ? 1 : Math.max(1, Math.round(saldo * pct));
+        slider.value = valor;
+        valorEl.textContent = valor;
+      });
+    });
+
+    $('btn-confirmar-monedas').addEventListener('click', () => {
+      const cantidad = parseInt(slider.value, 10) || 1;
+      apostarMonedas(cantidad);
+    });
+  }
+}
+
+// VEGAS: actualiza el panel siempre visible con el saldo propio, el de los
+// rivales y las dos bancas (vidas / apuestas)
+function actualizarPanelEconomiaVegas(estado) {
+  const cont = $('economia-vegas');
+  if (!cont || !estado.vegas) return;
+  cont.classList.remove('oculto');
+
+  const miSaldo = estado.vegas.monedas?.[miId] ?? 0;
+
+  const filasRivales = estado.jugadores
+    .filter(j => j.id !== miId)
+    .map(j => `<span class="moneda-rival">${j.nickname}: ${estado.vegas.monedas?.[j.id] ?? 0} 🪙</span>`)
+    .join('');
+
+  cont.innerHTML = `
+    <div class="economia-vegas-fila economia-vegas-mias">🪙 Tus monedas: <strong>${miSaldo}</strong></div>
+    <div class="economia-vegas-fila economia-vegas-rivales">${filasRivales}</div>
+    <div class="economia-vegas-fila economia-vegas-bancas">
+      <span title="Resto del bote de vidas, se reparte cuando alcance para un número exacto">🏦 Banco vidas: ${estado.vegas.bancaVidas}</span>
+      <span title="Resto del bote de apuestas, se reparte cuando alcance para un número exacto">🎲 Banco apuestas: ${estado.vegas.bancaApuestas}</span>
+    </div>
+  `;
+}
+
+// VEGAS: muestra los movimientos económicos de la subronda (bote de vidas
+// repartido + resultado de la apuesta de monedas) en la pantalla de resumen
+function mostrarResultadosVegas(vegas) {
+  let cont = $('resultados-vegas');
+  if (!vegas) {
+    cont?.classList.add('oculto');
+    return;
+  }
+  if (!cont) {
+    cont = document.createElement('div');
+    cont.id = 'resultados-vegas';
+    const tabla = $('tabla-resumen');
+    tabla?.insertAdjacentElement('afterend', cont);
+  }
+  cont.classList.remove('oculto');
+
+  // Agrupar movimientos por jugador (puede tener varios: bote de vidas +
+  // resultado de apuesta de monedas)
+  const totales = {};
+  (vegas.movimientos || []).forEach(m => {
+    totales[m.jugadorId] = (totales[m.jugadorId] || 0) + m.delta;
+  });
+
+  const ETIQUETAS_MOTIVO = {
+    bote_vidas:              '🏦 Bote de vidas',
+    apuesta_perdida:         '🎲 Apuesta perdida',
+    apuesta_ganada:          '🎲 Apuesta acertada',
+    apuesta_ganada_prorrata: '🎲 Apuesta acertada (parcial)'
+  };
+
+  const filas = (vegas.movimientos || []).map(m => {
+    const jugador = miEstado?.jugadores.find(j => j.id === m.jugadorId);
+    const esYo    = m.jugadorId === miId;
+    const nombre  = esYo ? 'Tú' : (jugador?.nickname || '???');
+    const signo   = m.delta > 0 ? '+' : '';
+    const clase   = m.delta > 0 ? 'positivo' : 'negativo';
+    return `<div class="vegas-movimiento ${clase}">
+      <span>${nombre} — ${ETIQUETAS_MOTIVO[m.motivo] || m.motivo}</span>
+      <span>${signo}${m.delta} 🪙</span>
+    </div>`;
+  }).join('');
+
+  cont.innerHTML = `
+    <p class="vegas-resultados-titulo">🎰 Resultado económico</p>
+    ${filas || '<p style="font-size:0.8rem;color:var(--gris)">Sin movimientos esta subronda</p>'}
+    <div class="economia-vegas-fila economia-vegas-bancas" style="margin-top:0.4rem">
+      <span>🏦 Banco vidas: ${vegas.bancaVidas}</span>
+      <span>🎲 Banco apuestas: ${vegas.bancaApuestas}</span>
+    </div>
+  `;
+
+  // Sonido de monedas para resultados propios positivos
+  const miDelta = totales[miId] || 0;
+  if (miDelta > 0) {
+    try { sonidoCartaEspecial(1, 'oros'); } catch (e) {}
+  }
 }
 
 function tradFase(fase) {
@@ -1034,6 +1193,16 @@ function apostar(cantidad) {
   });
 }
 
+// VEGAS: segundo paso del turno — arriesgar monedas sobre la apuesta de bazas
+function apostarMonedas(cantidad) {
+  sonidoCarta();
+  const panel = $('panel-monedas');
+  if (panel) delete panel.dataset.saldo; // forzar reconstrucción del panel la próxima vez
+  socket.emit('apostarMonedas', { cantidad }, res => {
+    if (res.error) mostrarError(res.error);
+  });
+}
+
 function jugarCarta(idx) {
   // Determinar sonido: si conocemos la carta (mano visible), usar sonido específico
   const yo = miEstado?.jugadores.find(j => j.id === miId);
@@ -1155,7 +1324,8 @@ const DESCS_MODALIDAD = {
   twisted:  'Las cartas se juegan boca abajo y se revelan a la vez',
   chaos:    'Tus cartas se barajan tras apostar — no sabes qué juegas',
   leap:     '🙈 Apuestas a ciegas — ves tus cartas solo después de apostar',
-  hardcore: '💀 Jokers, 7 de Oros árbitro, Rey inmune, maná/logros y Duelo del Prisionero en la ronda final'
+  hardcore: '💀 Jokers, 7 de Oros árbitro, Rey inmune, maná/logros y Duelo del Prisionero en la ronda final',
+  vegas:    '🎰 Empiezas con 50 monedas. Por cada vida perdida, 10 monedas van al bote y se reparten entre quien no perdió ninguna. Además, arriesga monedas a que aciertas tu apuesta de bazas: si aciertas, las doblas.'
 };
 
 const NOMBRES_MODALIDAD = {
@@ -1163,10 +1333,11 @@ const NOMBRES_MODALIDAD = {
   twisted:  '🃏 Twisted',
   chaos:    '🌀 Chaos',
   leap:     '🙈 Leap of Faith',
-  hardcore: '💀 Hardcore'
+  hardcore: '💀 Hardcore',
+  vegas:    '🎰 Vegas'
 };
 
-const MODOS_VALIDOS = ['clasico', 'twisted', 'chaos', 'leap', 'hardcore'];
+const MODOS_VALIDOS = ['clasico', 'twisted', 'chaos', 'leap', 'hardcore', 'vegas'];
 
 // Aplica el fondo correspondiente al modo de juego (clase en <body>) y
 // actualiza la etiqueta visible para que todos sepan a qué se está jugando
@@ -1478,7 +1649,7 @@ socket.on('mesaActualizada', ({ mesa }) => {
 
 let ultimoResumen = [];
 
-socket.on('subrondaTerminada', ({ resumen, jugadoresVivos, eventosLogroSubronda }) => {
+socket.on('subrondaTerminada', ({ resumen, jugadoresVivos, eventosLogroSubronda, vegas }) => {
   ultimoResumen = resumen;
   const miResumen = resumen.find(r => r.id === miId);
   if (miResumen && miResumen.vidasRestadas > 0) sonidoPierdesVidas();
@@ -1499,6 +1670,9 @@ socket.on('subrondaTerminada', ({ resumen, jugadoresVivos, eventosLogroSubronda 
     `;
     tbody.appendChild(tr);
   });
+
+  // VEGAS: resultados económicos de la subronda (bote de vidas + apuestas)
+  mostrarResultadosVegas(vegas);
 
   // Zona de donación de vidas
   let zonaDonacion = $('zona-donacion');
@@ -1664,6 +1838,13 @@ socket.on('salaReseteada', ({ sala }) => {
   ultimoResumen = [];
   renderizarSala(sala);
   irA('sala');
+
+  // Ocultar paneles específicos de Vegas por si la próxima partida es de
+  // otro modo (se reconstruyen al renderizar el siguiente estado si procede)
+  $('economia-vegas')?.classList.add('oculto');
+  $('panel-monedas')?.classList.add('oculto');
+  if ($('panel-monedas')) delete $('panel-monedas').dataset.saldo;
+  $('resultados-vegas')?.classList.add('oculto');
 });
 
 // ── MODAL INSTRUCCIONES ──

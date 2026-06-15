@@ -84,15 +84,28 @@
           <h3>🙈 Leap of Faith</h3>
           <p>Apuestas <strong>sin ver tus cartas</strong>. Una vez todos han apostado, se revelan las manos y se juega como el clásico. Pura intuición.</p>
         </div>
+        <div class="instruccion-bloque modo-vegas">
+          <h3>🎰 Vegas</h3>
+          <p>Se juega igual que el <strong>Clásico</strong>, pero con economía de monedas:</p>
+          <ul class="lista-vegas">
+            <li>🪙 Todos empiezan con <strong>50 monedas</strong>.</li>
+            <li>🏦 Al final de cada subronda, por cada vida que pierda un jugador van <strong>10 monedas al bote</strong>. El bote se reparte a partes iguales entre los jugadores que <strong>no perdieron ninguna vida</strong>. Si la división no es exacta, el resto se guarda en el <strong>Banco de vidas</strong> y se suma al bote de la siguiente subronda.</li>
+            <li>🎲 Justo después de apostar tus bazas, decides cuántas <strong>monedas arriesgas</strong> (mínimo 1 si tienes saldo). Si tu apuesta de bazas se cumple exactamente, <strong>doblas</strong> esas monedas; si fallas, las pierdes.</li>
+            <li>Las monedas perdidas en apuestas van a un <strong>Banco de apuestas</strong> separado, de donde salen los premios de quienes aciertan. Si no hay suficiente para pagar el doble a todos, se reparte a prorrata y el resto queda guardado para la siguiente subronda.</li>
+            <li>Si nadie acierta su apuesta de bazas en una subronda, el bote de vidas completo pasa al Banco de vidas sin repartirse.</li>
+          </ul>
+          <p style="font-size:0.8rem;color:var(--gris)">Las monedas no afectan a tus vidas ni a tu apuesta de bazas — son una capa extra de riesgo/recompensa para quienes quieran arriesgar más allá de la supervivencia.</p>
+        </div>
         <div class="instruccion-bloque">
           <h3>📊 Comparativa</h3>
           <table class="tabla-modos">
-            <thead><tr><th></th><th>Clásico</th><th>Twisted</th><th>Chaos</th></tr></thead>
+            <thead><tr><th></th><th>Clásico</th><th>Twisted</th><th>Chaos</th><th>Vegas</th></tr></thead>
             <tbody>
-              <tr><td>Ves tus cartas al apostar</td><td>✓</td><td>✓</td><td>✓</td></tr>
-              <tr><td>Sabes qué juegas</td><td>✓</td><td>✓</td><td>✗</td></tr>
-              <tr><td>Rivales ven tus cartas</td><td>✗</td><td>✗</td><td>✗</td></tr>
-              <tr><td>Ves tu carta en ronda final</td><td>✗</td><td>✓</td><td>✓</td></tr>
+              <tr><td>Ves tus cartas al apostar</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+              <tr><td>Sabes qué juegas</td><td>✓</td><td>✓</td><td>✗</td><td>✓</td></tr>
+              <tr><td>Rivales ven tus cartas</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td></tr>
+              <tr><td>Ves tu carta en ronda final</td><td>✗</td><td>✓</td><td>✓</td><td>✗</td></tr>
+              <tr><td>Economía de monedas</td><td>✗</td><td>✗</td><td>✗</td><td>✓</td></tr>
             </tbody>
           </table>
         </div>
@@ -225,6 +238,7 @@
         <button id="btn-modo-chaos"    class="btn-modo secundario" data-modo="chaos">🌀 Chaos</button>
         <button id="btn-modo-leap"     class="btn-modo secundario" data-modo="leap">🙈 Leap</button>
         <button id="btn-modo-hardcore" class="btn-modo secundario btn-modo-hardcore" data-modo="hardcore">💀 Hardcore</button>
+        <button id="btn-modo-vegas"    class="btn-modo secundario btn-modo-vegas" data-modo="vegas">🎰 Vegas</button>
       </div>
       <p id="desc-modalidad" style="color:#aaa;font-size:0.8rem;text-align:center">Modo estándar — apuestas y bazas clásicas</p>
     </div>
@@ -241,6 +255,7 @@
       <span id="info-escala-invertida" class="oculto badge-joker">🃏 Escala invertida</span>
     </div>
     <div id="banner-espectador" class="oculto">💀 Estás eliminado — modo espectador</div>
+    <div id="economia-vegas" class="oculto"></div>
     <div id="rivales"></div>
     <div id="mesa">
       <p class="label-mesa">Mesa</p>
@@ -263,6 +278,7 @@
       <p id="msg-apuesta"></p>
       <div id="botones-apuesta"></div>
     </div>
+    <div id="panel-monedas" class="oculto"></div>
     <div id="panel-ases" class="oculto">
       <p id="msg-as"></p>
       <div id="botones-as"></div>

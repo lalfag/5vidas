@@ -48,8 +48,31 @@ const CONFIG_MODALIDAD = {
     sistemaManá:            true,   // logros y barra de maná
     dilemaDelPrisionero:    true,   // duelo en ronda final
     maxVidas:               7       // cap de vidas en hardcore
+  },
+  vegas: {
+    cartasBocaAbajo:        false,
+    barajarTrasApuestas:    false,
+    rondaFinalVerPropia:    false, // igual que clásico
+    rondaFinalEspiar:       false,
+    cartasOcultasAlApostar: false,
+    hardcore:               false,
+    economia:               true   // flag maestra: monedas + apuesta de monedas
   }
 };
+
+// ── ECONOMÍA VEGAS ────────────────────────────────────────────────────────────
+const MONEDAS_INICIALES   = 50;
+const MONEDAS_POR_VIDA    = 10; // monedas que van al bote de vidas por cada vida perdida
+
+function estadoVegasInicial(jugadores) {
+  const monedas = {};
+  jugadores.forEach(j => { monedas[j.id] = MONEDAS_INICIALES; });
+  return {
+    monedas,
+    bancaVidas:    0,
+    bancaApuestas: 0
+  };
+}
 
 // ── BARAJA HARDCORE ──────────────────────────────────────────────────────────
 // Añade 2 jokers a la baraja española estándar
@@ -86,6 +109,7 @@ function crearPartida(jugadores, modalidad = 'clasico') {
       avatar:       j.avatar || null,
       mano:         [],
       apuesta:      null,
+      apuestaMonedas: null, // VEGAS: monedas arriesgadas esta subronda
       bazasGanadas: 0,
       // Estado Hardcore por jugador
       mana:         config.hardcore ? estadoManaInicial() : null
@@ -104,7 +128,9 @@ function crearPartida(jugadores, modalidad = 'clasico') {
     maxVidas,
     // Estado Hardcore global
     duelo:             null,  // { jugadorAId, jugadorBId, fase, eleccionA, eleccionB }
-    inversionEscala:   false  // true cuando hay joker activo en mesa
+    inversionEscala:   false, // true cuando hay joker activo en mesa
+    // VEGAS: economía de monedas
+    vegas:             config.economia ? estadoVegasInicial(jugadores) : null
   };
 }
 
@@ -120,6 +146,7 @@ function iniciarSubronda(partida) {
   partida.jugadores.forEach((j, i) => {
     j.mano         = manos[i];
     j.apuesta      = null;
+    j.apuestaMonedas = null;
     j.bazasGanadas = 0;
     j.manoBarajada = false;
     j.espiadoPor   = [];
@@ -273,6 +300,15 @@ function cartasEnSubronda(partida) {
   return CARTAS_POR_SUBRONDA[partida.subrondaActual];
 }
 
+// La ronda final (1 carta, "póker indio") es simultánea en clásico y vegas
+// (vegas usa las mismas reglas base que clásico). El resto de modalidades
+// especiales (twisted, chaos, leap, hardcore) apuestan por turnos también
+// en la ronda final.
+const MODALIDADES_APUESTA_SIMULTANEA_FINAL = ['clasico', 'vegas'];
+function esApuestaSimultanea(modalidad, esRondaFinal) {
+  return esRondaFinal && MODALIDADES_APUESTA_SIMULTANEA_FINAL.includes(modalidad);
+}
+
 function apuestaValida(partida, jugadorId, cantidad) {
   const numCartas    = cartasEnSubronda(partida);
   const esRondaFinal = partida.subrondaActual === 4;
@@ -303,7 +339,7 @@ function registrarApuesta(partida, jugadorId, cantidad) {
   if (partida.fase !== 'apuestas') return { error: 'No es fase de apuestas' };
 
   const esRondaFinal      = partida.subrondaActual === 4;
-  const apuestaSimultanea = esRondaFinal && partida.modalidad === 'clasico';
+  const apuestaSimultanea = esApuestaSimultanea(partida.modalidad, esRondaFinal);
 
   if (!apuestaSimultanea && partida.jugadores[partida.turnoIdx].id !== jugadorId) {
     return { error: 'No es tu turno' };
@@ -320,27 +356,62 @@ function registrarApuesta(partida, jugadorId, cantidad) {
     if (esUltimo && !esRondaFinal) {
       const sumaActual = partida.jugadores.reduce((acc, j) => acc + (j.apuesta ?? 0), 0);
       const numCartas  = cartasEnSubronda(partida);
-      // El número más restrictivo es el que más se acerca a la prohibición sin tocarla
       const prohibido  = numCartas - sumaActual;
-      if (cantidad === prohibido - 1 || cantidad === prohibido + 1) {
+
+      // La apuesta "más restrictiva" es la opción válida (0..numCartas, distinta
+      // de `prohibido`) cuya distancia a `prohibido` es mínima. Cuando `prohibido`
+      // cae fuera del rango [0, numCartas] (suma ya muy alta o muy baja),
+      // el extremo correspondiente (0 o numCartas) sigue siendo la opción más
+      // restrictiva aunque su distancia a `prohibido` sea mayor que 1 — antes
+      // esto no se detectaba porque solo se comprobaban los vecinos ±1.
+      let mejorDistancia = Infinity;
+      for (let c = 0; c <= numCartas; c++) {
+        if (c === prohibido) continue; // esa opción ni siquiera es válida
+        const distancia = Math.abs(c - prohibido);
+        if (distancia < mejorDistancia) mejorDistancia = distancia;
+      }
+      if (mejorDistancia !== Infinity && Math.abs(cantidad - prohibido) === mejorDistancia) {
         logroFiloNavaja = jugador;
       }
     }
   }
 
   jugador.apuesta = cantidad;
-  partida.apuestasRealizadas++;
   log(partida, `${jugador.nickname} apuesta ${cantidad}`);
 
-  if (!apuestaSimultanea) {
-    partida.turnoIdx = siguienteTurno(partida.turnoIdx, partida.jugadores.length);
-  }
-
   const logros = [];
-
   if (logroFiloNavaja && logroFiloNavaja.mana) {
     const l = aplicarMana(partida, logroFiloNavaja, 1, 'filo_navaja');
     if (l) logros.push(l);
+  }
+
+  // VEGAS: tras apostar bazas, el mismo jugador debe apostar monedas antes de
+  // que su "turno de apuesta" se considere completo. Si no tiene monedas,
+  // se resuelve automáticamente con 0 (no se le puede forzar un mínimo de 1
+  // si su saldo es 0).
+  if (partida.config.economia) {
+    const saldo = partida.vegas.monedas[jugadorId] ?? 0;
+    if (saldo <= 0) {
+      jugador.apuestaMonedas = 0;
+      completarTurnoApuesta(partida, apuestaSimultanea);
+      return { ok: true, partida, logros };
+    }
+    // Pendiente de apostar monedas — el "turno" de apuesta no se completa aún
+    return { ok: true, partida, logros, esperandoMonedas: true, saldoMonedas: saldo };
+  }
+
+  completarTurnoApuesta(partida, apuestaSimultanea);
+  return { ok: true, partida, logros };
+}
+
+// Completa el "turno de apuesta" (bazas [+ monedas en vegas]): cuenta como
+// apuesta realizada, avanza turno si procede, y comprueba si la fase de
+// apuestas ha terminado.
+function completarTurnoApuesta(partida, apuestaSimultanea) {
+  partida.apuestasRealizadas++;
+
+  if (!apuestaSimultanea) {
+    partida.turnoIdx = siguienteTurno(partida.turnoIdx, partida.jugadores.length);
   }
 
   if (partida.apuestasRealizadas === partida.jugadores.length) {
@@ -355,8 +426,37 @@ function registrarApuesta(partida, jugadorId, cantidad) {
     partida.turnoIdx = partida.iniciadorIdx;
     log(partida, 'Apuestas completadas — comienza el juego');
   }
+}
 
-  return { ok: true, partida, logros };
+// VEGAS: registra la apuesta de monedas del jugador (segundo paso de su
+// turno de apuesta). Debe haber apostado bazas ya (jugador.apuesta !== null)
+// y aún no haber apostado monedas (jugador.apuestaMonedas === null).
+function registrarApuestaMonedas(partida, jugadorId, cantidadMonedas) {
+  if (!partida.config.economia) return { error: 'Esta modalidad no usa monedas' };
+
+  const jugador = partida.jugadores.find(j => j.id === jugadorId);
+  if (!jugador) return { error: 'Jugador no encontrado' };
+  if (partida.fase !== 'apuestas') return { error: 'No es fase de apuestas' };
+  if (jugador.apuesta === null) return { error: 'Primero debes apostar bazas' };
+  if (jugador.apuestaMonedas !== null) return { error: 'Ya has apostado monedas' };
+
+  const saldo = partida.vegas.monedas[jugadorId] ?? 0;
+  cantidadMonedas = Math.floor(cantidadMonedas);
+
+  if (saldo <= 0) {
+    cantidadMonedas = 0;
+  } else if (cantidadMonedas < 1 || cantidadMonedas > saldo) {
+    return { error: `Debes arriesgar entre 1 y ${saldo} monedas` };
+  }
+
+  jugador.apuestaMonedas = cantidadMonedas;
+  log(partida, `${jugador.nickname} arriesga ${cantidadMonedas} monedas`);
+
+  const esRondaFinal      = partida.subrondaActual === 4;
+  const apuestaSimultanea = esApuestaSimultanea(partida.modalidad, esRondaFinal);
+  completarTurnoApuesta(partida, apuestaSimultanea);
+
+  return { ok: true, partida };
 }
 
 // ── JUGAR CARTA ───────────────────────────────────────────────────────────────
@@ -732,12 +832,19 @@ function vistaPublica(partida, miId) {
     inversionEscala:   partida.inversionEscala || false,
     duelo:             dueloPublico,
     rivalesOrden,
+    // VEGAS: economía — monedas de todos (info pública de casino) + bancas
+    vegas: partida.vegas ? {
+      monedas:       { ...partida.vegas.monedas },
+      bancaVidas:    partida.vegas.bancaVidas,
+      bancaApuestas: partida.vegas.bancaApuestas
+    } : null,
     config: {
       rondaFinalEspiar:   config.rondaFinalEspiar,
       rondaFinalVerPropia: verPropia,
       hardcore:           config.hardcore || false,
       jokers:             config.jokers   || false,
-      poderesFiguras:     config.poderesFiguras || false
+      poderesFiguras:     config.poderesFiguras || false,
+      economia:           config.economia || false
     },
     jugadores: partida.jugadores.map(j => ({
       id:           j.id,
@@ -747,6 +854,8 @@ function vistaPublica(partida, miId) {
       apuesta:      esRondaFinal
         ? (todosApostaron || j.id === miId ? j.apuesta : null)
         : j.apuesta,
+      // VEGAS: cada jugador ve su propia apuesta de monedas; espectadores ven todas
+      apuestaMonedas: (j.id === miId || soyEspectador) ? j.apuestaMonedas : null,
       bazasGanadas: j.bazasGanadas,
       cartasEnMano: j.mano.length,
       manoBarajada: j.manoBarajada || false,
@@ -776,6 +885,7 @@ module.exports = {
   crearPartida,
   iniciarSubronda,
   registrarApuesta,
+  registrarApuestaMonedas,
   registrarEleccionDuelo,
   resolverDuelo,
   jugarCarta,
@@ -791,6 +901,8 @@ module.exports = {
   CONFIG_MODALIDAD,
   LOGROS,
   MANA_PARA_VIDA,
+  MONEDAS_INICIALES,
+  MONEDAS_POR_VIDA,
   encontrarSiguienteSinApostar,
   encontrarSiguienteSinJugar
 };
