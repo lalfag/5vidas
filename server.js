@@ -6,11 +6,12 @@ const {
   obtenerSalaPorSocket, obtenerSalaPorToken, eliminarJugador
 } = require('./game/roomManager');
 const {
-  crearPartida, iniciarSubronda, registrarApuesta,
+  crearPartida, iniciarSubronda, registrarApuesta, registrarApuestaMonedas,
   registrarEleccionDuelo, resolverDuelo,
   jugarCarta, aplicar7Oros, espiarCarta, vistaPublica,
   aplicarMana, comprobarLogrosMinironda, comprobarLogrosSubronda,
   CARTAS_POR_SUBRONDA, CONFIG_MODALIDAD, LOGROS,
+  MONEDAS_POR_VIDA,
   encontrarSiguienteSinApostar, encontrarSiguienteSinJugar
 } = require('./game/game');
 const {
@@ -217,6 +218,99 @@ function finalizarMinironda(sala, ganadorId, contextoLogros = null) {
   }, 2000);
 }
 
+// VEGAS: resuelve la economía de la subronda.
+//   resumen: array ya poblado con { id, vidasRestadas, ... } por jugador
+//            (jugador.apuesta y jugador.apuestaMonedas siguen intactos en
+//            partida.jugadores en este punto, aún no se han reseteado).
+// Devuelve un objeto con el detalle de movimientos para informar al cliente,
+// y muta partida.vegas.monedas / bancaVidas / bancaApuestas.
+function resolverEconomiaVegas(partida) {
+  const vegas   = partida.vegas;
+  const movimientos = []; // [{ jugadorId, nickname, delta, motivo }]
+
+  // ── PASO A: BOTE DE VIDAS ──────────────────────────────────────────────
+  let boteVidas = vegas.bancaVidas;
+  partida.jugadores.forEach(j => {
+    const restar = calcularVidasARestar(j.apuesta, j.bazasGanadas);
+    boteVidas += restar * MONEDAS_POR_VIDA;
+  });
+
+  const ganadoresVidas = partida.jugadores.filter(j =>
+    calcularVidasARestar(j.apuesta, j.bazasGanadas) === 0
+  );
+
+  if (ganadoresVidas.length > 0) {
+    const parte = Math.floor(boteVidas / ganadoresVidas.length);
+    const resto = boteVidas % ganadoresVidas.length;
+    ganadoresVidas.forEach(j => {
+      vegas.monedas[j.id] = (vegas.monedas[j.id] ?? 0) + parte;
+      if (parte > 0) {
+        movimientos.push({ jugadorId: j.id, nickname: j.nickname, delta: parte, motivo: 'bote_vidas' });
+      }
+    });
+    vegas.bancaVidas = resto;
+  } else {
+    // Nadie acertó su apuesta de bazas esta subronda — todo el bote de
+    // vidas pasa íntegro a la banca para la siguiente subronda
+    vegas.bancaVidas = boteVidas;
+  }
+
+  // ── PASO B: BOTE DE APUESTAS (monedas arriesgadas sobre la apuesta de bazas) ──
+  const acertantes = []; // { jugador, arriesgado }
+  let boteApuestas = vegas.bancaApuestas;
+
+  partida.jugadores.forEach(j => {
+    const arriesgado = j.apuestaMonedas || 0;
+    if (arriesgado <= 0) return;
+
+    const acerto = calcularVidasARestar(j.apuesta, j.bazasGanadas) === 0;
+    if (acerto) {
+      acertantes.push({ jugador: j, arriesgado });
+    } else {
+      // Falla: pierde lo arriesgado, va al bote de apuestas
+      vegas.monedas[j.id] = Math.max(0, (vegas.monedas[j.id] ?? 0) - arriesgado);
+      boteApuestas += arriesgado;
+      movimientos.push({ jugadorId: j.id, nickname: j.nickname, delta: -arriesgado, motivo: 'apuesta_perdida' });
+    }
+  });
+
+  const totalAPagar = acertantes.reduce((acc, a) => acc + a.arriesgado * 2, 0);
+
+  if (totalAPagar === 0) {
+    // Nadie acertó con monedas en juego — el bote de apuestas (si lo hay)
+    // queda íntegro para la siguiente subronda
+    vegas.bancaApuestas = boteApuestas;
+  } else if (boteApuestas >= totalAPagar) {
+    // El bote alcanza para pagar el doble completo a todos los acertantes
+    acertantes.forEach(({ jugador, arriesgado }) => {
+      const premio = arriesgado * 2;
+      vegas.monedas[jugador.id] = (vegas.monedas[jugador.id] ?? 0) + premio;
+      movimientos.push({ jugadorId: jugador.id, nickname: jugador.nickname, delta: premio, motivo: 'apuesta_ganada' });
+    });
+    vegas.bancaApuestas = boteApuestas - totalAPagar;
+  } else {
+    // El bote no alcanza: reparto a prorrata según lo arriesgado por cada
+    // acertante. El resto de redondeo queda en la banca de apuestas.
+    let repartido = 0;
+    acertantes.forEach(({ jugador, arriesgado }) => {
+      const proporcional = Math.floor(boteApuestas * (arriesgado * 2) / totalAPagar);
+      vegas.monedas[jugador.id] = (vegas.monedas[jugador.id] ?? 0) + proporcional;
+      repartido += proporcional;
+      if (proporcional > 0) {
+        movimientos.push({ jugadorId: jugador.id, nickname: jugador.nickname, delta: proporcional, motivo: 'apuesta_ganada_prorrata' });
+      }
+    });
+    vegas.bancaApuestas = boteApuestas - repartido;
+  }
+
+  return {
+    monedas:       { ...vegas.monedas },
+    bancaVidas:    vegas.bancaVidas,
+    bancaApuestas: vegas.bancaApuestas,
+    movimientos
+  };
+}
+
 function finalizarSubronda(sala) {
   const partida = sala.partida;
   const resumen = [];
@@ -279,6 +373,12 @@ function finalizarSubronda(sala) {
     eventosLogroSubronda.push(...comprobarLogrosSubronda(partida, resumen));
   }
 
+  // VEGAS: economía de monedas (bote de vidas + apuestas sobre la apuesta de bazas)
+  let eventoVegas = null;
+  if (partida.config.economia) {
+    eventoVegas = resolverEconomiaVegas(partida);
+  }
+
   const nuevosEspectadores = partida.jugadores.filter(j => j.vidas <= 0);
   nuevosEspectadores.forEach(j => { j.espectador = true; });
   if (!sala.espectadores) sala.espectadores = [];
@@ -288,7 +388,8 @@ function finalizarSubronda(sala) {
   io.to(sala.codigo).emit('subrondaTerminada', {
     resumen,
     jugadoresVivos:      partida.jugadores,
-    eventosLogroSubronda: eventosLogroSubronda || []
+    eventosLogroSubronda: eventosLogroSubronda || [],
+    vegas:               eventoVegas
   });
 
   if (partida.jugadores.length <= 1) {
@@ -469,7 +570,7 @@ io.on('connection', (socket) => {
     if (sala.creador !== socket.id) return callback?.({ error: 'Solo el creador puede cambiar el modo' });
     if (sala.estado !== 'esperando') return callback?.({ error: 'La partida ya ha comenzado' });
 
-    const modosValidos = ['clasico', 'twisted', 'chaos', 'leap', 'hardcore'];
+    const modosValidos = ['clasico', 'twisted', 'chaos', 'leap', 'hardcore', 'vegas'];
     if (!modosValidos.includes(modalidad)) return callback?.({ error: 'Modo inválido' });
 
     sala.modalidad = modalidad;
@@ -478,14 +579,36 @@ io.on('connection', (socket) => {
   });
 
   socket.on('apostar', ({ cantidad }, callback) => {
-    const sala = obtenerSalaPorSocket(socket.id);
-    if (!sala || !sala.partida) return callback({ error: 'Sin partida activa' });
-    const resultado = registrarApuesta(sala.partida, socket.id, cantidad);
-    if (resultado.error) return callback({ error: resultado.error });
-    emitirEstado(sala);
-    // Si tras apostar empieza la fase de juego, arrancar el timer
-    if (sala.partida.fase === 'juego') iniciarTurnoTimer(sala);
-    callback({ ok: true });
+    try {
+      const sala = obtenerSalaPorSocket(socket.id);
+      if (!sala || !sala.partida) return callback({ error: 'Sin partida activa' });
+      const resultado = registrarApuesta(sala.partida, socket.id, cantidad);
+      if (resultado.error) return callback({ error: resultado.error });
+      emitirEstado(sala);
+      // Si tras apostar empieza la fase de juego, arrancar el timer
+      if (sala.partida.fase === 'juego') iniciarTurnoTimer(sala);
+      callback({ ok: true, esperandoMonedas: resultado.esperandoMonedas || false, saldoMonedas: resultado.saldoMonedas });
+    } catch (err) {
+      console.error('[ERROR apostar]', err);
+      callback({ error: 'Error interno al procesar la apuesta' });
+    }
+  });
+
+  // VEGAS: segundo paso del turno de apuesta — arriesgar monedas sobre la
+  // apuesta de bazas que el jugador acaba de hacer
+  socket.on('apostarMonedas', ({ cantidad }, callback) => {
+    try {
+      const sala = obtenerSalaPorSocket(socket.id);
+      if (!sala || !sala.partida) return callback({ error: 'Sin partida activa' });
+      const resultado = registrarApuestaMonedas(sala.partida, socket.id, cantidad);
+      if (resultado.error) return callback({ error: resultado.error });
+      emitirEstado(sala);
+      if (sala.partida.fase === 'juego') iniciarTurnoTimer(sala);
+      callback({ ok: true });
+    } catch (err) {
+      console.error('[ERROR apostarMonedas]', err);
+      callback({ error: 'Error interno al procesar la apuesta de monedas' });
+    }
   });
 
   socket.on('jugarCarta', ({ cartaIdx }, callback) => {
@@ -778,7 +901,16 @@ io.on('connection', (socket) => {
         io.to(sala.codigo).emit('jugadorDesconectado', { nickname: jugador.nickname });
 
         const eraSuTurnoJuego    = partida.fase === 'juego'    && partida.jugadores[partida.turnoIdx]?.id === socket.id;
-        const habiaApostado      = jugador.apuesta !== null;
+        // VEGAS: el "turno de apuesta" solo cuenta en apuestasRealizadas si
+        // se completó del todo (bazas + monedas). Si apostó bazas pero
+        // desconectó antes de apostar monedas, NO se había contabilizado aún.
+        const habiaApostado = partida.config.economia
+          ? (jugador.apuesta !== null && jugador.apuestaMonedas !== null)
+          : (jugador.apuesta !== null);
+        // VEGAS: caso especial — apostó bazas pero no llegó a apostar monedas.
+        // Su "media apuesta" no debe quedar contaminando el estado del
+        // siguiente jugador ni el recuento; simplemente se descarta junto
+        // con el jugador (no resta de apuestasRealizadas porque nunca sumó).
 
         // Quitar también su jugada de la mesa si ya había jugado esta minironda
         const jugadaEnMesaIdx = partida.mesa.findIndex(m => m.jugadorId === socket.id);
