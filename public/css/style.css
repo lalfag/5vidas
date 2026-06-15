@@ -12,6 +12,79 @@
   --verde:     #4caf50;
   --gris:      #aaa;
   --blanco:    #f0f0f0;
+
+  /* ── SKIN DE CARTAS: "Clásica" (valores por defecto) ──────────────────
+     Cada skin redefine estas variables bajo body.skin-XXX. El resto del
+     CSS de .carta usa SIEMPRE estas variables, nunca colores fijos, para
+     que cambiar de skin sea instantáneo y consistente. */
+  --carta-bg-1:        #fefefe;
+  --carta-bg-2:        #f5f2eb;
+  --carta-bg-3:        #ede9df;
+  --carta-borde:       rgba(0,0,0,0.12);
+  --carta-marco:       rgba(0,0,0,0.08);
+  --carta-textura:     rgba(0,0,0,0.012);
+  --carta-sombra-1:    rgba(0,0,0,0.18);
+  --carta-sombra-2:    rgba(0,0,0,0.14);
+  --carta-brillo-sup:  rgba(255,255,255,0.9);
+  --carta-nombre:      #999;
+
+  /* Figuras (Rey/Caballo/Sota) */
+  --carta-figura-bg-1: #fffef5;
+  --carta-figura-bg-2: #fdf7e3;
+  --carta-figura-bg-3: #f7eed0;
+
+  /* Fondos de Ases por palo (el aura/brillo de color se mantiene igual
+     en todas las skins; solo cambia el tono base de la carta) */
+  --as-oros-bg-1:    #fffef5; --as-oros-bg-2:    #fff8e0; --as-oros-bg-3:    #fdf0c0;
+  --as-copas-bg-1:   #fff8f8; --as-copas-bg-2:   #fff0f0; --as-copas-bg-3:   #fde0e0;
+  --as-espadas-bg-1: #f6f8ff; --as-espadas-bg-2: #ecf0fc; --as-espadas-bg-3: #dde6fa;
+  --as-bastos-bg-1:  #f5fbf5; --as-bastos-bg-2:  #eaf5ea; --as-bastos-bg-3:  #d8eed8;
+}
+
+/* ── SKIN: Nocturna ── fondo oscuro azulado, texto claro */
+body.skin-nocturna {
+  --carta-bg-1:        #2a3550;
+  --carta-bg-2:        #1f2940;
+  --carta-bg-3:        #161e32;
+  --carta-borde:       rgba(180,200,255,0.18);
+  --carta-marco:       rgba(180,200,255,0.12);
+  --carta-textura:     rgba(255,255,255,0.018);
+  --carta-sombra-1:    rgba(0,0,0,0.45);
+  --carta-sombra-2:    rgba(0,0,0,0.35);
+  --carta-brillo-sup:  rgba(255,255,255,0.08);
+  --carta-nombre:      #8aa0d0;
+
+  --carta-figura-bg-1: #353f5e;
+  --carta-figura-bg-2: #2a3350;
+  --carta-figura-bg-3: #1f2840;
+
+  --as-oros-bg-1:    #3a3a2e; --as-oros-bg-2:    #332e1e; --as-oros-bg-3:    #2a2614;
+  --as-copas-bg-1:   #3a2a30; --as-copas-bg-2:   #331f26; --as-copas-bg-3:   #2a1820;
+  --as-espadas-bg-1: #232c45; --as-espadas-bg-2: #1c2438; --as-espadas-bg-3: #161b2c;
+  --as-bastos-bg-1:  #283a2e; --as-bastos-bg-2:  #1f3024; --as-bastos-bg-3:  #18261c;
+}
+
+/* ── SKIN: Pergamino ── crema envejecido, sepia */
+body.skin-pergamino {
+  --carta-bg-1:        #fbf3df;
+  --carta-bg-2:        #f3e6c8;
+  --carta-bg-3:        #e8d6ab;
+  --carta-borde:       rgba(120,85,35,0.28);
+  --carta-marco:       rgba(120,85,35,0.18);
+  --carta-textura:     rgba(120,85,35,0.03);
+  --carta-sombra-1:    rgba(80,55,20,0.25);
+  --carta-sombra-2:    rgba(80,55,20,0.18);
+  --carta-brillo-sup:  rgba(255,250,235,0.85);
+  --carta-nombre:      #8a7142;
+
+  --carta-figura-bg-1: #fff6e0;
+  --carta-figura-bg-2: #f7e7bf;
+  --carta-figura-bg-3: #efd99a;
+
+  --as-oros-bg-1:    #fff8e0; --as-oros-bg-2:    #fbedc0; --as-oros-bg-3:    #f3dd9a;
+  --as-copas-bg-1:   #fcefe5; --as-copas-bg-2:   #f7ddd0; --as-copas-bg-3:   #efc8b8;
+  --as-espadas-bg-1: #f0f3e8; --as-espadas-bg-2: #e3e8d4; --as-espadas-bg-3: #d2dab8;
+  --as-bastos-bg-1:  #f3f6e2; --as-bastos-bg-2:  #e7eecb; --as-bastos-bg-3:  #d7e3ad;
 }
 
 /* ── KEYFRAMES ── */
@@ -81,6 +154,48 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background-color 0.6s ease, background-image 1s ease;
+}
+
+/* ── FONDOS POR MODALIDAD ──────────────────────────────────────────────
+   Se aplican en <body> según el modo preseleccionado/jugado, para que
+   todo el mundo sepa de un vistazo a qué se está jugando */
+body.fondo-clasico {
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(233,69,96,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(15,52,96,0.4) 0%, transparent 50%);
+}
+body.fondo-twisted {
+  background-image:
+    radial-gradient(ellipse at 25% 15%, rgba(124,58,237,0.16) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 85%, rgba(15,52,96,0.45) 0%, transparent 55%);
+}
+body.fondo-chaos {
+  background-image:
+    radial-gradient(ellipse at 30% 20%, rgba(34,197,94,0.14) 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 80%, rgba(124,58,237,0.18) 0%, transparent 55%);
+}
+body.fondo-leap {
+  background-image:
+    radial-gradient(ellipse at 20% 25%, rgba(240,192,64,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 80%, rgba(15,52,96,0.4) 0%, transparent 55%);
+}
+body.fondo-hardcore {
+  background-color: #0a0606;
+  background-image:
+    radial-gradient(ellipse at 20% 15%, rgba(233,69,96,0.22) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 85%, rgba(80,0,10,0.5) 0%, transparent 55%);
+}
+
+/* ── ETIQUETA DE MODO (lobby, no-creador) ── */
+.etiqueta-modo {
+  font-family: 'Cinzel', serif;
+  font-size: 0.85rem; font-weight: 700; letter-spacing: 1px;
+  text-align: center;
+  padding: 0.35rem 1rem; border-radius: 20px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--dorado);
 }
 
 h1 {
@@ -223,7 +338,35 @@ button:disabled {
 }
 
 /* ── RIVALES ── */
-#rivales { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+/* ── RIVALES: DISPOSICIÓN TIPO MESA ──────────────────────────────────────
+   Grid de 3 columnas × 2 filas. Fila superior: arriba-izq / arriba-centro /
+   arriba-derecha. Fila inferior: izquierda / (hueco hacia la mesa) / derecha.
+   Cada rival recibe un data-pos asignado según su posición en rivalesOrden
+   (que ya viene ordenado: siguiente en turno → ... → anterior a mí). */
+#rivales {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "arriba-izq arriba-centro arriba-der"
+    "izq        hueco         der";
+  gap: 0.5rem;
+  justify-items: center;
+  align-items: center;
+}
+#rivales .rival[data-pos="arriba-izq"]     { grid-area: arriba-izq; }
+#rivales .rival[data-pos="arriba-centro"]  { grid-area: arriba-centro; }
+#rivales .rival[data-pos="arriba-der"]     { grid-area: arriba-der; }
+#rivales .rival[data-pos="izq"]            { grid-area: izq; justify-self: start; }
+#rivales .rival[data-pos="der"]            { grid-area: der; justify-self: end; }
+
+@media (max-width: 480px) {
+  #rivales { gap: 0.35rem; }
+  #rivales .rival[data-pos="izq"],
+  #rivales .rival[data-pos="der"] {
+    width: 92px; min-width: 0; padding: 0.4rem 0.5rem; font-size: 0.74rem;
+  }
+}
 
 .rival {
   background: rgba(255,255,255,0.04);
@@ -305,20 +448,20 @@ button:disabled {
       45deg,
       transparent,
       transparent 1px,
-      rgba(0,0,0,0.012) 1px,
-      rgba(0,0,0,0.012) 2px
+      var(--carta-textura) 1px,
+      var(--carta-textura) 2px
     ),
-    linear-gradient(170deg, #fefefe 0%, #f5f2eb 60%, #ede9df 100%);
-  border: 1.5px solid rgba(0,0,0,0.12);
+    linear-gradient(170deg, var(--carta-bg-1) 0%, var(--carta-bg-2) 60%, var(--carta-bg-3) 100%);
+  border: 1.5px solid var(--carta-borde);
   display: flex; flex-direction: column;
   align-items: center; justify-content: space-between;
   padding: 4px 4px 14px 4px; cursor: pointer;
-  transition: transform 0.18s cubic-bezier(.2,.8,.3,1.2), box-shadow 0.18s ease;
+  transition: transform 0.18s cubic-bezier(.2,.8,.3,1.2), box-shadow 0.18s ease, background 0.4s ease, border-color 0.4s ease;
   position: relative; user-select: none;
   box-shadow:
-    0 2px 5px rgba(0,0,0,0.18),
-    0 6px 18px rgba(0,0,0,0.14),
-    inset 0 1px 0 rgba(255,255,255,0.9);
+    0 2px 5px var(--carta-sombra-1),
+    0 6px 18px var(--carta-sombra-2),
+    inset 0 1px 0 var(--carta-brillo-sup);
 }
 
 /* Marco interior decorativo */
@@ -327,25 +470,82 @@ button:disabled {
   position: absolute;
   inset: 4px;
   border-radius: 6px;
-  border: 0.5px solid rgba(0,0,0,0.08);
+  border: 0.5px solid var(--carta-marco);
   pointer-events: none;
   z-index: 0;
 }
 
-/* Carta al ser repartida — solo opacity, NO transform (evita bloquear hover) */
-.carta.carta-nueva {
-  animation: fadeIn 0.3s ease both;
+/* ── REPARTO DE CARTAS ──────────────────────────────────────────────────
+   Cada carta de la mano entra deslizándose ligeramente desde abajo con un
+   pequeño "vuelo", escalonada por orden de aparición (nth-child) para que
+   se note el reparto carta a carta en vez de un fade simultáneo.
+   El keyframe termina en transform: none para no interferir con el hover. */
+@keyframes repartoCarta {
+  0%   { opacity: 0; transform: translateY(28px) scale(0.85) rotate(-4deg); }
+  60%  { opacity: 1; transform: translateY(-4px) scale(1.02) rotate(1deg); }
+  100% { opacity: 1; transform: none; }
 }
-/* Carta al caer en la mesa — ídem */
+.carta.carta-nueva {
+  animation: repartoCarta 0.4s cubic-bezier(.2,.8,.3,1.2) both;
+}
+#mi-mano .carta.carta-nueva:nth-child(1) { animation-delay: 0s; }
+#mi-mano .carta.carta-nueva:nth-child(2) { animation-delay: 0.07s; }
+#mi-mano .carta.carta-nueva:nth-child(3) { animation-delay: 0.14s; }
+#mi-mano .carta.carta-nueva:nth-child(4) { animation-delay: 0.21s; }
+#mi-mano .carta.carta-nueva:nth-child(5) { animation-delay: 0.28s; }
+
+/* ── CARTA JUGADA A LA MESA ─────────────────────────────────────────────
+   Entra con un pequeño "lanzamiento": cae desde arriba con leve rotación
+   y rebote al asentarse. */
+@keyframes cartaALaMesa {
+  0%   { opacity: 0; transform: translateY(-36px) scale(0.8) rotate(-8deg); }
+  55%  { opacity: 1; transform: translateY(6px) scale(1.05) rotate(2deg); }
+  100% { opacity: 1; transform: none; }
+}
 .carta.carta-jugada {
-  animation: fadeIn 0.35s ease both;
+  animation: cartaALaMesa 0.4s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+/* ── CARTA GANADORA DE LA BAZA ──────────────────────────────────────────
+   Breve elevación + aura dorada para remarcar qué carta se llevó la baza,
+   antes de que la mesa se limpie para la siguiente minironda. */
+@keyframes cartaGanadora {
+  0%   { transform: translateY(0) scale(1);     box-shadow: 0 2px 5px var(--carta-sombra-1), 0 6px 18px var(--carta-sombra-2), inset 0 1px 0 var(--carta-brillo-sup), 0 0 0 0 rgba(240,192,64,0); }
+  30%  { transform: translateY(-10px) scale(1.08); box-shadow: 0 6px 14px var(--carta-sombra-1), 0 10px 26px var(--carta-sombra-2), inset 0 1px 0 var(--carta-brillo-sup), 0 0 22px 4px rgba(240,192,64,0.65); }
+  100% { transform: translateY(0) scale(1);     box-shadow: 0 2px 5px var(--carta-sombra-1), 0 6px 18px var(--carta-sombra-2), inset 0 1px 0 var(--carta-brillo-sup), 0 0 0 0 rgba(240,192,64,0); }
+}
+.carta.carta-ganadora {
+  animation: cartaGanadora 1.1s ease-out both;
+  z-index: 2;
 }
 
 /* ── HOVER: transform en TODAS las cartas seleccionables por igual ── */
 .carta.seleccionable         { cursor: pointer; }
-.carta.seleccionable:hover   { transform: translateY(-14px) scale(1.04); box-shadow: 0 4px 8px rgba(0,0,0,0.12), 0 18px 36px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.9); }
+.carta.seleccionable:hover   { transform: translateY(-14px) scale(1.04); box-shadow: 0 4px 8px rgba(0,0,0,0.12), 0 18px 36px rgba(0,0,0,0.28), inset 0 1px 0 var(--carta-brillo-sup); }
 .carta.no-seleccionable      { cursor: default; }
 .carta.no-seleccionable:hover { transform: none; }
+
+/* As de Espadas: cartas ya anuladas (parejas) seleccionables como objetivo */
+.carta.carta-anulada-objetivo {
+  opacity: 0.55;
+  filter: grayscale(0.5);
+  border: 1.5px dashed rgba(233,69,96,0.5);
+}
+.carta.carta-anulada-objetivo:hover {
+  opacity: 1;
+  filter: grayscale(0);
+}
+
+/* Animación sutil al anularse una pareja: se levantan y desvanecen */
+@keyframes anularCarta {
+  0%   { transform: translateY(0) scale(1);     opacity: 1;   filter: brightness(1); }
+  35%  { transform: translateY(-16px) scale(1.05); opacity: 1; filter: brightness(1.3); box-shadow: 0 0 18px rgba(233,69,96,0.6); }
+  100% { transform: translateY(-30px) scale(0.85); opacity: 0; filter: brightness(1.1); }
+}
+.carta.carta-anulando {
+  animation: anularCarta 0.85s ease-in forwards;
+  pointer-events: none;
+}
 
 /* ── PALOS: borde + acento de color ── */
 .carta.oros {
@@ -393,14 +593,12 @@ button:disabled {
   line-height: 1;
   display: block;
   color: inherit;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.8);
+  text-shadow: 0 1px 0 var(--carta-brillo-sup);
 }
 
-/* Colores de valor por palo */
-.carta.oros   .carta-val { color: #8a6000; }
-.carta.copas  .carta-val { color: #a0001e; }
-.carta.espadas .carta-val { color: #0f3a7a; }
-.carta.bastos .carta-val { color: #1a5c22; }
+/* Colores de valor por palo: heredados del color inline aplicado por JS
+   (obtenerPaloColor), que ya varía según la skin activa — ver color: inherit
+   arriba */
 
 
 /* ── CENTRO ── */
@@ -413,7 +611,7 @@ button:disabled {
 
 /* ── NOMBRE JUGADOR DEBAJO ── */
 .jugador-carta {
-  font-size: 0.48rem; color: #999;
+  font-size: 0.48rem; color: var(--carta-nombre);
   position: absolute; bottom: 3px; left: 0; right: 0;
   text-align: center; font-family: 'Inter', sans-serif;
   letter-spacing: 0.3px;
@@ -427,10 +625,10 @@ button:disabled {
       45deg,
       transparent,
       transparent 1px,
-      rgba(0,0,0,0.012) 1px,
-      rgba(0,0,0,0.012) 2px
+      var(--carta-textura) 1px,
+      var(--carta-textura) 2px
     ),
-    linear-gradient(170deg, #fffef5 0%, #fdf7e3 60%, #f7eed0 100%);
+    linear-gradient(170deg, var(--carta-figura-bg-1) 0%, var(--carta-figura-bg-2) 60%, var(--carta-figura-bg-3) 100%);
 }
 .carta.figura::after {
   content: '';
@@ -459,7 +657,7 @@ button:disabled {
 .carta.as.oros {
   background:
     repeating-linear-gradient(45deg, transparent, transparent 1px, rgba(0,0,0,0.01) 1px, rgba(0,0,0,0.01) 2px),
-    linear-gradient(170deg, #fffef5 0%, #fff8e0 55%, #fdf0c0 100%);
+    linear-gradient(170deg, var(--as-oros-bg-1) 0%, var(--as-oros-bg-2) 55%, var(--as-oros-bg-3) 100%);
   color: rgba(176,134,0,0.6);
 }
 .carta.as.oros::after {
@@ -476,7 +674,7 @@ button:disabled {
 .carta.as.copas {
   background:
     repeating-linear-gradient(45deg, transparent, transparent 1px, rgba(0,0,0,0.01) 1px, rgba(0,0,0,0.01) 2px),
-    linear-gradient(170deg, #fff8f8 0%, #fff0f0 55%, #fde0e0 100%);
+    linear-gradient(170deg, var(--as-copas-bg-1) 0%, var(--as-copas-bg-2) 55%, var(--as-copas-bg-3) 100%);
   color: rgba(160,0,30,0.6);
 }
 .carta.as.copas::after {
@@ -493,7 +691,7 @@ button:disabled {
 .carta.as.espadas {
   background:
     repeating-linear-gradient(45deg, transparent, transparent 1px, rgba(0,0,0,0.01) 1px, rgba(0,0,0,0.01) 2px),
-    linear-gradient(170deg, #f6f8ff 0%, #ecf0fc 55%, #dde6fa 100%);
+    linear-gradient(170deg, var(--as-espadas-bg-1) 0%, var(--as-espadas-bg-2) 55%, var(--as-espadas-bg-3) 100%);
   color: rgba(15,58,122,0.6);
 }
 .carta.as.espadas::after {
@@ -510,7 +708,7 @@ button:disabled {
 .carta.as.bastos {
   background:
     repeating-linear-gradient(45deg, transparent, transparent 1px, rgba(0,0,0,0.01) 1px, rgba(0,0,0,0.01) 2px),
-    linear-gradient(170deg, #f5fbf5 0%, #eaf5ea 55%, #d8eed8 100%);
+    linear-gradient(170deg, var(--as-bastos-bg-1) 0%, var(--as-bastos-bg-2) 55%, var(--as-bastos-bg-3) 100%);
   color: rgba(26,92,34,0.6);
 }
 .carta.as.bastos::after {
@@ -546,7 +744,7 @@ button:disabled {
 /* Carta mini rivales ronda final */
 .carta-mini {
   width: 36px; height: 54px; border-radius: 6px;
-  background: white; border: 1.5px solid #ddd;
+  background: var(--carta-bg-1); border: 1.5px solid var(--carta-borde);
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   gap: 2px; margin-top: 4px;
@@ -563,7 +761,22 @@ button:disabled {
   border-radius: 14px; padding: 0.9rem;
   display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
   backdrop-filter: blur(4px);
+  transition: background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
 }
+
+/* ── RESALTE: TU TURNO ──────────────────────────────────────────────
+   Cambio de fondo + borde + glow pulsante para que sea evidente incluso
+   sin prestar atención al texto "tu turno" */
+@keyframes turnoGlow {
+  0%, 100% { box-shadow: 0 0 12px rgba(76,175,80,0.35), inset 0 0 0 1px rgba(76,175,80,0.25); }
+  50%      { box-shadow: 0 0 28px rgba(76,175,80,0.7),  inset 0 0 0 1px rgba(76,175,80,0.5); }
+}
+#mi-zona.turno-activo {
+  background: rgba(76,175,80,0.10);
+  border-color: rgba(76,175,80,0.45);
+  animation: turnoGlow 1.6s ease-in-out infinite;
+}
+
 #mi-info {
   display: flex; gap: 1rem; align-items: center;
   font-size: 0.9rem; flex-wrap: wrap; justify-content: center;
@@ -1127,6 +1340,65 @@ button:disabled {
   max-width: 60px;
 }
 .avatar-item.seleccionado span { color: #f0c040; }
+
+/* ── SELECTOR DE SKIN DE CARTAS ── */
+.skin-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+.skin-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background: rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.skin-item:hover {
+  background: rgba(255,255,255,0.08);
+  transform: scale(1.04);
+}
+.skin-item.seleccionado {
+  border-color: var(--dorado);
+  background: rgba(240,192,64,0.12);
+}
+.skin-item span {
+  font-size: 0.72rem;
+  color: var(--gris);
+  font-family: 'Inter', sans-serif;
+}
+.skin-item.seleccionado span { color: var(--dorado); }
+
+/* Mini-preview de carta por skin — usa los gradientes propios de cada skin
+   directamente (no depende de la skin activa en <body>), para que el
+   selector muestre siempre las 3 opciones reales */
+.skin-preview {
+  width: 44px; height: 64px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cinzel', serif; font-weight: 900; font-size: 1.1rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+.skin-preview-clasica {
+  background: linear-gradient(170deg, #fefefe 0%, #f5f2eb 60%, #ede9df 100%);
+  border: 1.5px solid rgba(0,0,0,0.12);
+  color: #8a6000;
+}
+.skin-preview-nocturna {
+  background: linear-gradient(170deg, #2a3550 0%, #1f2940 60%, #161e32 100%);
+  border: 1.5px solid rgba(180,200,255,0.18);
+  color: #f0c95a;
+}
+.skin-preview-pergamino {
+  background: linear-gradient(170deg, #fbf3df 0%, #f3e6c8 60%, #e8d6ab 100%);
+  border: 1.5px solid rgba(120,85,35,0.28);
+  color: #8a6000;
+}
 
 /* Avatar mini en el lobby */
 .avatar-mini {

@@ -55,12 +55,7 @@ function iniciarTurnoTimer(sala) {
     io.to(sala.codigo).emit('turnoSkipeado', { nickname: jugadorActual.nickname });
     emitirEstado(sala);
     if (resultado.todosJugaron) {
-      const resolucion = resolverMinironda(sala.partida.mesa, {
-        inversionEscala: sala.partida.inversionEscala || false,
-        esHardcore:      sala.partida.config.hardcore  || false
-      });
-      const hayAses = gestionarAses(sala, resolucion);
-      if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional, resolucion.contextoLogros);
+      resolverYContinuar(sala);
     } else {
       iniciarTurnoTimer(sala);
     }
@@ -75,6 +70,39 @@ function emitirEstado(sala) {
     sala.espectadores.forEach(j => {
       io.to(j.id).emit('estadoActualizado', vistaPublica(sala.partida, j.id));
     });
+  }
+}
+
+const ANULACION_ANIM_MS = 900; // pausa para que se vea la animación de anulación
+
+// Calcula la resolución de la minironda actual y continúa el flujo
+// (gestionarAses / finalizarMinironda), insertando antes una pausa visual
+// si hubo cartas anuladas por pares para que el cliente pueda animarlas.
+function resolverYContinuar(sala) {
+  const partida = sala.partida;
+  const resolucion = resolverMinironda(partida.mesa, {
+    inversionEscala: partida.inversionEscala || false,
+    esHardcore:      partida.config.hardcore  || false
+  });
+
+  const gruposAnulados = resolucion.gruposAnulados || [];
+  const hayAnulaciones = gruposAnulados.some(g => g.jugadas.length > 0);
+
+  const continuar = () => {
+    const hayAses = gestionarAses(sala, resolucion);
+    if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional, resolucion.contextoLogros);
+  };
+
+  if (hayAnulaciones) {
+    io.to(sala.codigo).emit('cartasAnuladas', {
+      gruposAnulados: gruposAnulados.map(g => ({
+        valor:   g.valor,
+        jugadas: g.jugadas.map(j => ({ jugadorId: j.jugadorId, carta: j.carta }))
+      }))
+    });
+    setTimeout(continuar, ANULACION_ANIM_MS);
+  } else {
+    continuar();
   }
 }
 
@@ -95,6 +123,7 @@ function gestionarAses(sala, resultado) {
     asesPendientes:     ases.map(a => a.carta.palo).filter(p => p === 'espadas' || p === 'bastos'),
     multiplicadorCopas: ases.some(a => a.carta.palo === 'copas'),
     contextoLogros:     resultado.contextoLogros || null,
+    gruposAnulados:     resultado.gruposAnulados || [],
     // HARDCORE: 7 de oros activo en mesa
     siete7OrosActivo
   };
@@ -106,7 +135,11 @@ function gestionarAses(sala, resultado) {
 
     ases.forEach(as => {
       if (as.carta.palo === 'espadas' || as.carta.palo === 'bastos') {
-        io.to(as.jugadorId).emit('accionAs', { palo: as.carta.palo, mesa: resultado.mesa });
+        io.to(as.jugadorId).emit('accionAs', {
+          palo: as.carta.palo,
+          mesa: resultado.mesa,
+          gruposAnulados: resultado.gruposAnulados || []
+        });
       }
     });
   }
@@ -192,6 +225,10 @@ function finalizarSubronda(sala) {
   const jugadoresConUnaVida = partida.jugadores.filter(j => j.vidas === 1);
   const unicoConUnaVida     = jugadoresConUnaVida.length === 1 ? jugadoresConUnaVida[0].id : null;
 
+  // HARDCORE: eventos de logro de subronda (incluye el colchón de maná,
+  // calculado dentro del forEach siguiente)
+  const eventosLogroSubronda = [];
+
   partida.jugadores.forEach(j => {
     const restar = calcularVidasARestar(j.apuesta, j.bazasGanadas);
 
@@ -211,6 +248,17 @@ function finalizarSubronda(sala) {
         j.mana.mana -= 5;
         j.mana.vidasGanadasMana++;
         console.log(`[MANÁ-COLCHÓN] ${j.nickname} recupera 1 vida por maná lleno`);
+
+        // Aviso visual: sin esto, el jugador no sabe por qué no perdió la
+        // vida que le tocaba — se muestra como una notificación más
+        eventosLogroSubronda.push({
+          jugadorId:  j.id,
+          nickname:   j.nickname,
+          logroId:    'mana_colchon',
+          logro:      LOGROS.mana_colchon,
+          manaGanado: 0,
+          vidaGanada: true
+        });
       }
     }
 
@@ -227,9 +275,8 @@ function finalizarSubronda(sala) {
   });
 
   // HARDCORE: logros de subronda
-  let eventosLogroSubronda = [];
   if (partida.config.hardcore) {
-    eventosLogroSubronda = comprobarLogrosSubronda(partida, resumen);
+    eventosLogroSubronda.push(...comprobarLogrosSubronda(partida, resumen));
   }
 
   const nuevosEspectadores = partida.jugadores.filter(j => j.vidas <= 0);
@@ -300,6 +347,10 @@ function comprobarAsesResueltos(sala) {
 
   let ganador = res.ganadorProvisional;
   const inversionEscala = sala.partida.inversionEscala || false;
+
+  // Si el As de Espadas eliminó otra carta que era un As, ese As ya no debe
+  // aplicar su poder (ya no está en mesa)
+  res.ases = res.ases.filter(a => res.mesa.some(m => m.jugadorId === a.jugadorId && m.carta.palo === a.carta.palo && m.carta.valor === a.carta.valor));
 
   if (res.ases.some(a => a.carta.palo === 'oros')) {
     ganador = aplicarAsOros(ganador, res.ases);
@@ -410,6 +461,22 @@ io.on('connection', (socket) => {
     callback({ ok: true });
   });
 
+  // El creador preselecciona el modo de juego en el lobby — se refleja a
+  // todos (fondo + etiqueta) aunque la partida no haya empezado
+  socket.on('seleccionarModalidad', ({ modalidad }, callback) => {
+    const sala = obtenerSalaPorSocket(socket.id);
+    if (!sala) return callback?.({ error: 'No estás en ninguna sala' });
+    if (sala.creador !== socket.id) return callback?.({ error: 'Solo el creador puede cambiar el modo' });
+    if (sala.estado !== 'esperando') return callback?.({ error: 'La partida ya ha comenzado' });
+
+    const modosValidos = ['clasico', 'twisted', 'chaos', 'leap', 'hardcore'];
+    if (!modosValidos.includes(modalidad)) return callback?.({ error: 'Modo inválido' });
+
+    sala.modalidad = modalidad;
+    io.to(sala.codigo).emit('modalidadSeleccionada', { modalidad });
+    callback?.({ ok: true });
+  });
+
   socket.on('apostar', ({ cantidad }, callback) => {
     const sala = obtenerSalaPorSocket(socket.id);
     if (!sala || !sala.partida) return callback({ error: 'Sin partida activa' });
@@ -442,40 +509,48 @@ io.on('connection', (socket) => {
     if (resultado.todosJugaron) {
       // TWISTED: delay de 1.5s para que los jugadores vean las cartas girar
       const delayReveal = partida.config.cartasBocaAbajo ? 1500 : 0;
-      setTimeout(() => {
-        const resolucion = resolverMinironda(sala.partida.mesa, {
-        inversionEscala: sala.partida.inversionEscala || false,
-        esHardcore:      sala.partida.config.hardcore  || false
-      });
-        const hayAses = gestionarAses(sala, resolucion);
-        if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional, resolucion.contextoLogros);
-      }, delayReveal);
+      setTimeout(() => resolverYContinuar(sala), delayReveal);
     } else {
       iniciarTurnoTimer(sala);
     }
     callback({ ok: true });
   });
 
-  socket.on('asEspadas', ({ cartaIdx }, callback) => {
+  socket.on('asEspadas', ({ cartaIdx, objetivo }, callback) => {
     const sala = obtenerSalaPorSocket(socket.id);
     if (!sala?.partida?.resolucion) return callback({ error: 'No hay resolución activa' });
     const res = sala.partida.resolucion;
 
-    if (cartaIdx !== -1) {
-      const objetivo = res.mesa[cartaIdx];
-      if (objetivo && objetivo.jugadorId === socket.id) {
+    // Compatibilidad: cartaIdx (clásico, apunta a mesa) u objetivo { origen, idx, grupoIdx }
+    const target = objetivo || (cartaIdx !== undefined && cartaIdx !== -1 ? { origen: 'mesa', idx: cartaIdx } : null);
+
+    if (target) {
+      let jugadorCarta = null;
+      if (target.origen === 'anulada') {
+        const grupo = res.gruposAnulados?.[target.grupoIdx];
+        jugadorCarta = grupo?.jugadas?.[target.idx]?.jugadorId;
+      } else {
+        jugadorCarta = res.mesa[target.idx]?.jugadorId;
+      }
+      if (jugadorCarta === socket.id) {
         return callback({ error: 'No puedes eliminar tu propia carta' });
       }
+
       const resultadoEspadas = aplicarAsEspadas(
-        res.mesa, cartaIdx,
-        sala.partida.config.hardcore || false
+        res.mesa, target,
+        sala.partida.config.hardcore || false,
+        res.gruposAnulados || []
       );
       if (resultadoEspadas.error) return callback({ error: resultadoEspadas.error });
-      res.mesa = resultadoEspadas.mesa;
+      res.mesa           = resultadoEspadas.mesa;
+      res.gruposAnulados = resultadoEspadas.gruposAnulados;
+
+      // Si una carta resucitó y volvió a la mesa, el ganador provisional
+      // se recalcula al final en comprobarAsesResueltos (usa res.mesa)
     }
 
     res.asesPendientes = res.asesPendientes.filter(p => p !== 'espadas');
-    io.to(sala.codigo).emit('mesaActualizada', { mesa: res.mesa });
+    io.to(sala.codigo).emit('mesaActualizada', { mesa: res.mesa, gruposAnulados: res.gruposAnulados });
     comprobarAsesResueltos(sala);
     callback({ ok: true });
   });
@@ -744,12 +819,7 @@ io.on('connection', (socket) => {
             partida.fase     = 'juego';
             partida.turnoIdx = partida.iniciadorIdx;
             if (partida.mesa.length === partida.jugadores.length) {
-              const resolucion = resolverMinironda(partida.mesa, {
-                inversionEscala: partida.inversionEscala || false,
-                esHardcore:      partida.config.hardcore  || false
-              });
-              const hayAses = gestionarAses(sala, resolucion);
-              if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional, resolucion.contextoLogros);
+              resolverYContinuar(sala);
               return;
             }
           }
@@ -759,12 +829,7 @@ io.on('connection', (socket) => {
         } else if (partida.fase === 'juego') {
           // Si todos los que quedan ya jugaron su carta esta minironda
           if (partida.mesa.length === partida.jugadores.length && partida.mesa.length > 0) {
-            const resolucion = resolverMinironda(partida.mesa, {
-              inversionEscala: partida.inversionEscala || false,
-              esHardcore:      partida.config.hardcore  || false
-            });
-            const hayAses = gestionarAses(sala, resolucion);
-            if (!hayAses) finalizarMinironda(sala, resolucion.ganadorProvisional, resolucion.contextoLogros);
+            resolverYContinuar(sala);
           } else {
             if (eraSuTurnoJuego) {
               // El turno pasa a quien le sigue en la mesa (el siguiente que no haya jugado)

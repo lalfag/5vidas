@@ -442,7 +442,11 @@ const LOGROS = {
   racha_perfecta:        { nombre: 'Racha Perfecta',          mana: 2 },
   lo_mas_bajo:           { nombre: 'Lo más bajo es lo más alto', mana: 2 },
   mentor:                { nombre: 'Mentor',                  mana: 3 },
-  indestructible:        { nombre: 'Indestructible',          mana: 5 }
+  indestructible:        { nombre: 'Indestructible',          mana: 5 },
+  // Pseudo-logro: el maná lleno (colchón) salva una vida al perderla por
+  // fallar la apuesta. mana: 0 porque el maná ya se consumió en el colchón;
+  // solo sirve para notificar visualmente la vida salvada.
+  mana_colchon:          { nombre: 'Maná de Reserva',         mana: 0 }
 };
 
 const MANA_PARA_VIDA = 5;
@@ -697,6 +701,24 @@ function vistaPublica(partida, miId) {
     };
   }
 
+  // ── ORDEN RELATIVO DE RIVALES (disposición tipo mesa) ─────────────────────
+  // Cada jugador ve a sus rivales empezando por el SIGUIENTE en turno tras él
+  // y terminando en el ANTERIOR a él, recorriendo la mesa en el sentido de
+  // juego (igual que en una mesa real, donde siempre sabes quién va detrás
+  // y quién delante de ti). Para espectadores, se usa el orden absoluto.
+  let rivalesOrden;
+  const miIdx = partida.jugadores.findIndex(j => j.id === miId);
+  if (miIdx === -1) {
+    // Espectador: orden absoluto, todos son "rivales" visualmente
+    rivalesOrden = partida.jugadores.map(j => j.id);
+  } else {
+    const n = partida.jugadores.length;
+    rivalesOrden = [];
+    for (let i = 1; i < n; i++) {
+      rivalesOrden.push(partida.jugadores[(miIdx + i) % n].id);
+    }
+  }
+
   return {
     subrondaActual:    partida.subrondaActual,
     minirondaActual:   partida.minirondaActual,
@@ -709,6 +731,7 @@ function vistaPublica(partida, miId) {
     modalidad:         partida.modalidad,
     inversionEscala:   partida.inversionEscala || false,
     duelo:             dueloPublico,
+    rivalesOrden,
     config: {
       rondaFinalEspiar:   config.rondaFinalEspiar,
       rondaFinalVerPropia: verPropia,

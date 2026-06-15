@@ -154,7 +154,7 @@
               <tr><td>💎 Indestructible</td><td>Aguantar 5 subrondas consecutivas sin perder ni una vida</td><td>+5</td></tr>
             </tbody>
           </table>
-          <p class="tabla-logros-nota">5 de maná = 1 vida extra (máximo 7 vidas)</p>
+          <p class="tabla-logros-nota">5 de maná = 1 vida extra (máximo 7 vidas). Si tu maná está lleno y pierdes una vida por fallar tu apuesta, esa vida se recupera automáticamente (✨ Maná de Reserva).</p>
         </div>
       </div>
 
@@ -183,6 +183,29 @@
     <div class="avatar-seccion">
       <div id="avatar-grid-todos" class="avatar-grid"></div>
     </div>
+
+    <h2 style="margin-top:0.5rem">Elige tu baraja</h2>
+    <div id="skin-grid" class="skin-grid">
+      <div class="skin-item" data-skin="clasica">
+        <div class="skin-preview skin-preview-clasica">
+          <span class="skin-preview-val">7</span>
+        </div>
+        <span>Clásica</span>
+      </div>
+      <div class="skin-item" data-skin="nocturna">
+        <div class="skin-preview skin-preview-nocturna">
+          <span class="skin-preview-val">7</span>
+        </div>
+        <span>Nocturna</span>
+      </div>
+      <div class="skin-item" data-skin="pergamino">
+        <div class="skin-preview skin-preview-pergamino">
+          <span class="skin-preview-val">7</span>
+        </div>
+        <span>Pergamino</span>
+      </div>
+    </div>
+
     <button id="btn-confirmar-avatar" disabled>Confirmar →</button>
     <p id="msg-avatar" class="info"></p>
   </div>
@@ -193,6 +216,7 @@
     <p class="subtitulo">Comparte el código con tus amigos</p>
     <ul id="lista-jugadores"></ul>
     <p id="msg-sala" class="info"></p>
+    <p id="etiqueta-modo-sala" class="etiqueta-modo oculto"></p>
     <div id="selector-modalidad" class="oculto" style="width:100%;display:flex;flex-direction:column;gap:0.5rem">
       <p style="color:#aaa;font-size:0.85rem;text-align:center">Modo de juego</p>
       <div style="display:flex;gap:0.5rem;width:100%;flex-wrap:wrap">
@@ -206,6 +230,7 @@
     </div>
     <button id="btn-iniciar" class="oculto">▶ Iniciar partida</button>
   </div>
+
 
   <!-- PANTALLA 3: Juego -->
   <div id="pantalla-juego" class="pantalla oculto">

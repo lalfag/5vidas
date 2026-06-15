@@ -29,7 +29,9 @@ function resolverMinironda(jugadas, opciones = {}) {
   }
 
   // 2. Aplicar anulaciones por pares sobre las cartas restantes
-  let mesa = aplicarAnulaciones([...mesaSinJokers], mesaSinJokers, log);
+  const resultadoAnulaciones = aplicarAnulaciones([...mesaSinJokers], mesaSinJokers, log);
+  let mesa = resultadoAnulaciones.jugadas;
+  const gruposAnulados = resultadoAnulaciones.gruposAnulados; // [{ valor, jugadas: [...] }]
 
   // 3. Detectar contexto para logros
   const fueUltimoEnPie = mesaSinJokers.length > 1 && mesa.length === 1 && !mesa[0].forzada;
@@ -84,13 +86,20 @@ function resolverMinironda(jugadas, opciones = {}) {
     efectosAs,
     ganadorProvisional,
     log,
-    contextoLogros
+    contextoLogros,
+    gruposAnulados
   };
 }
 
 // ── ANULACIONES POR PARES ─────────────────────────────────────────────────────
+// Devuelve { jugadas, gruposAnulados }
+//   jugadas:        cartas que quedan en mesa tras anulaciones (válidas)
+//   gruposAnulados: [{ valor, jugadas: [...] }] — pares/grupos eliminados,
+//                    útil para el As de Espadas (puede "matar" una de una pareja
+//                    anulada, devolviendo la otra a la mesa)
 function aplicarAnulaciones(jugadas, jugadasOriginales, log) {
   let cambio = true;
+  const gruposAnulados = [];
 
   while (cambio) {
     cambio = false;
@@ -106,14 +115,17 @@ function aplicarAnulaciones(jugadas, jugadasOriginales, log) {
         const anuladasCount = grupo.length % 2 === 0 ? grupo.length : grupo.length - 1;
         if (anuladasCount > 0) {
           log.push(`Anulación: ${anuladasCount} cartas de valor ${valor} eliminadas`);
+          const eliminadasJugadas = [];
           let eliminadas = 0;
           jugadas = jugadas.filter(j => {
             if (j.carta.valor === parseInt(valor) && eliminadas < anuladasCount) {
               eliminadas++;
+              eliminadasJugadas.push(j);
               return false;
             }
             return true;
           });
+          gruposAnulados.push({ valor: parseInt(valor), jugadas: eliminadasJugadas });
           cambio = true;
           break;
         }
@@ -127,7 +139,7 @@ function aplicarAnulaciones(jugadas, jugadasOriginales, log) {
     jugadas = [{ ...jugadasOriginales[jugadasOriginales.length - 1], forzada: true }];
   }
 
-  return jugadas;
+  return { jugadas, gruposAnulados };
 }
 
 // ── GANADOR POR VALOR NUMÉRICO ────────────────────────────────────────────────
@@ -166,14 +178,60 @@ function aplicarAsOros(ganadorProvisional, ases) {
 
 // ── AS DE ESPADAS ─────────────────────────────────────────────────────────────
 // HARDCORE: el rey (valor 12) no puede ser eliminado
-function aplicarAsEspadas(mesa, cartaAEliminarIdx, esHardcore = false) {
-  const objetivo = mesa[cartaAEliminarIdx];
-  if (esHardcore && objetivo && objetivo.reyInmune) {
-    return { error: 'El Rey es inmune al As de Espadas', mesa };
+//
+// objetivo: { origen: 'mesa', idx } → elimina mesa[idx] directamente
+//           { origen: 'anulada', grupoIdx, idx } → "mata" una de las cartas
+//           de una pareja/grupo ya anulado (gruposAnulados[grupoIdx].jugadas[idx]).
+//           Si el grupo anulado tenía exactamente 2 cartas, la otra carta del
+//           grupo "resucita" y vuelve a la mesa, compitiendo normalmente.
+//           Si el grupo tenía más de 2 (anulación múltiple), las cartas
+//           restantes del grupo simplemente quedan fuera (no hay resurrección
+//           ambigua de "la pareja").
+function aplicarAsEspadas(mesa, objetivo, esHardcore = false, gruposAnulados = []) {
+  // Compatibilidad: si objetivo es un número, es el índice clásico en mesa
+  if (typeof objetivo === 'number') {
+    objetivo = { origen: 'mesa', idx: objetivo };
+  }
+
+  if (objetivo.origen === 'anulada') {
+    const grupo = gruposAnulados[objetivo.grupoIdx];
+    if (!grupo) return { error: 'Grupo anulado no encontrado', mesa, gruposAnulados };
+
+    const cartaAMatar = grupo.jugadas[objetivo.idx];
+    if (!cartaAMatar) return { error: 'Carta no encontrada en el grupo anulado', mesa, gruposAnulados };
+
+    if (esHardcore && cartaAMatar.carta.valor === 12) {
+      return { error: 'El Rey es inmune al As de Espadas', mesa, gruposAnulados };
+    }
+
+    const nuevaMesa = [...mesa];
+    const nuevosGrupos = gruposAnulados.map((g, i) => i === objetivo.grupoIdx
+      ? { ...g, jugadas: g.jugadas.filter((_, i2) => i2 !== objetivo.idx) }
+      : g
+    );
+
+    // Si el grupo tenía exactamente 2 cartas (pareja simple), la superviviente
+    // vuelve a la mesa y compite normalmente
+    if (grupo.jugadas.length === 2) {
+      const superviviente = nuevosGrupos[objetivo.grupoIdx].jugadas[0];
+      if (superviviente) {
+        nuevaMesa.push({ ...superviviente });
+        nuevosGrupos[objetivo.grupoIdx] = { ...nuevosGrupos[objetivo.grupoIdx], jugadas: [] };
+      }
+    }
+
+    return { ok: true, mesa: nuevaMesa, gruposAnulados: nuevosGrupos.filter(g => g.jugadas.length > 0) };
+  }
+
+  // origen 'mesa' (comportamiento clásico)
+  const idx = objetivo.idx;
+  const target = mesa[idx];
+  if (esHardcore && target && target.reyInmune) {
+    return { error: 'El Rey es inmune al As de Espadas', mesa, gruposAnulados };
   }
   const nuevaMesa = [...mesa];
-  nuevaMesa.splice(cartaAEliminarIdx, 1);
-  return { ok: true, mesa: nuevaMesa };
+  nuevaMesa.splice(idx, 1);
+  return { ok: true, mesa: nuevaMesa, gruposAnulados };
 }
 
 // ── AS DE BASTOS ──────────────────────────────────────────────────────────────

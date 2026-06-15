@@ -65,6 +65,58 @@ const AVATARES = {
 
 let miAvatar = null;
 
+// ── SKINS DE CARTAS ────────────────────────────────────────────────────────
+// Cada skin define su propia paleta de color/borde por palo (el resto del
+// aspecto de la carta —fondos, texturas— se controla vía variables CSS en
+// body.skin-XXX, ver style.css). Aquí solo viven los colores que se aplican
+// inline desde JS (icono central, valores en las esquinas).
+const PALOS_COLOR_POR_SKIN = {
+  clasica: {
+    oros: '#8a6000', copas: '#a0001e', espadas: '#0f3a7a', bastos: '#1a5c22', joker: '#7c3aed'
+  },
+  nocturna: {
+    oros: '#f0c95a', copas: '#f08aa0', espadas: '#8fb4f5', bastos: '#8fe0a8', joker: '#c9a8ff'
+  },
+  pergamino: {
+    oros: '#8a6000', copas: '#9a2a1e', espadas: '#2a4a7a', bastos: '#3a6020', joker: '#6c3aad'
+  }
+};
+
+const BORDES_POR_SKIN = {
+  clasica: {
+    oros: 'rgba(176,134,0,0.35)', copas: 'rgba(180,0,40,0.3)', espadas: 'rgba(30,80,150,0.3)', bastos: 'rgba(30,110,40,0.3)', joker: 'rgba(124,58,237,0.4)'
+  },
+  nocturna: {
+    oros: 'rgba(240,201,90,0.4)', copas: 'rgba(240,138,160,0.35)', espadas: 'rgba(143,180,245,0.35)', bastos: 'rgba(143,224,168,0.35)', joker: 'rgba(201,168,255,0.45)'
+  },
+  pergamino: {
+    oros: 'rgba(176,134,0,0.4)', copas: 'rgba(154,42,30,0.35)', espadas: 'rgba(42,74,122,0.35)', bastos: 'rgba(58,96,32,0.35)', joker: 'rgba(108,58,173,0.45)'
+  }
+};
+
+const SKINS_VALIDAS = ['clasica', 'nocturna', 'pergamino'];
+
+function obtenerSkinActual() {
+  const guardada = sessionStorage.getItem('cincoVidasSkin');
+  return SKINS_VALIDAS.includes(guardada) ? guardada : 'clasica';
+}
+
+function aplicarSkinCartas(skin) {
+  if (!SKINS_VALIDAS.includes(skin)) skin = 'clasica';
+  sessionStorage.setItem('cincoVidasSkin', skin);
+  document.body.classList.remove(...SKINS_VALIDAS.map(s => `skin-${s}`));
+  document.body.classList.add(`skin-${skin}`);
+}
+
+// Getters que reemplazan los antiguos objetos fijos PALO_COLOR / PALO_BORDER:
+// devuelven la paleta de la skin actualmente activa
+function obtenerPaloColor() {
+  return PALOS_COLOR_POR_SKIN[obtenerSkinActual()] || PALOS_COLOR_POR_SKIN.clasica;
+}
+function obtenerPaloBorder() {
+  return BORDES_POR_SKIN[obtenerSkinActual()] || BORDES_POR_SKIN.clasica;
+}
+
 function inicializarPantallaAvatar() {
   const grid = document.getElementById('avatar-grid-todos');
 
@@ -106,6 +158,19 @@ document.getElementById('btn-confirmar-avatar').addEventListener('click', () => 
 
 // Llamar al inicializar
 inicializarPantallaAvatar();
+inicializarSelectorSkin();
+
+function inicializarSelectorSkin() {
+  const skinActual = obtenerSkinActual();
+  document.querySelectorAll('.skin-item').forEach(item => {
+    item.classList.toggle('seleccionado', item.dataset.skin === skinActual);
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.skin-item').forEach(el => el.classList.remove('seleccionado'));
+      item.classList.add('seleccionado');
+      aplicarSkinCartas(item.dataset.skin);
+    });
+  });
+}
 const PALOS_SVG = {
   oros: () => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%">
   <circle cx="18" cy="18" r="14" stroke="currentColor" stroke-width="1.6" fill="none" />
@@ -139,22 +204,6 @@ const PALOS_SVG = {
 </svg>`
 };
 
-
-const PALO_COLOR = {
-  oros:    '#8a6000',
-  copas:   '#a0001e',
-  espadas: '#0f3a7a',
-  bastos:  '#1a5c22',
-  joker:   '#7c3aed'
-};
-
-const PALO_BORDER = {
-  oros:    'rgba(176,134,0,0.35)',
-  copas:   'rgba(180,0,40,0.3)',
-  espadas: 'rgba(30,80,150,0.3)',
-  bastos:  'rgba(30,110,40,0.3)',
-  joker:   'rgba(124,58,237,0.4)'
-};
 
 const REVERSO_SVG = `<svg viewBox="0 0 90 130" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
   <rect x="1" y="1" width="88" height="128" rx="8" fill="#0f3460" stroke="#1a4a7a" stroke-width="1.5"/>
@@ -342,7 +391,7 @@ function crearCartaEl(carta, opts = {}) {
   const clasesEspeciales = esJoker ? ' joker' : (esAs ? ' as' : (esFigura ? ` figura ${nombreFigura}` : ''));
   el.className = `carta ${carta.palo}${clasesEspeciales} ${opts.seleccionable ? 'seleccionable' : 'no-seleccionable'} carta-nueva`;
 
-  const color = PALO_COLOR[carta.palo];
+  const color = obtenerPaloColor()[carta.palo];
   const val   = labelValor(carta.valor, carta.palo);
   const icono = esJoker
     ? JOKER_ICONO
@@ -382,10 +431,23 @@ function renderizarJuego(estado) {
   const esRondaFinal = estado.esRondaFinal;
   const numCartas    = [5,4,3,2,1][estado.subrondaActual];
 
+  // ── RESALTE DE "TU TURNO" ──────────────────────────────────────────────
+  // Tu turno de jugar carta (fase juego) o de apostar por turnos (fase apuestas,
+  // sin apuesta simultánea de ronda final)
+  const apuestaSimultaneaTurno = esRondaFinal && estado.modalidad === 'clasico';
+  const esMiTurnoActivo = esMiTurno && (
+    estado.fase === 'juego' ||
+    (estado.fase === 'apuestas' && !apuestaSimultaneaTurno && miJugador.apuesta === null)
+  );
+  const miZonaEl = $('mi-zona');
+  if (miZonaEl) miZonaEl.classList.toggle('turno-activo', esMiTurnoActivo);
+  document.body.classList.toggle('mi-turno', esMiTurnoActivo);
+
   const bannerEl = $('banner-espectador');
   soyEspectador ? bannerEl.classList.remove('oculto') : bannerEl.classList.add('oculto');
 
   $('info-subronda').textContent = `Subronda ${estado.subrondaActual + 1}/5${esRondaFinal ? ' · Final' : ''}`;
+  aplicarFondoModalidad(estado.modalidad);
   const infoModo = $('info-modalidad');
   if (infoModo) {
     const badges = { clasico: '', twisted: '🃏 Twisted', chaos: '🌀 Chaos' };
@@ -413,21 +475,44 @@ function renderizarJuego(estado) {
     ? `Aposté: ${miJugador.apuesta} · Bazas: ${miJugador.bazasGanadas}`
     : '';
 
-  // Rivales
+  // Rivales — ordenados en el sentido real de juego (el que va justo
+  // después de mí queda a mi izquierda, y se recorre hacia la derecha
+  // hasta el jugador anterior a mí), tal como en una mesa real
   const rivalesEl = $('rivales');
   rivalesEl.innerHTML = '';
-  estado.jugadores.filter(j => j.id !== miId).forEach(j => {
+
+  // Posiciones disponibles según número de rivales (de izquierda a derecha
+  // en el sentido de giro de la mesa)
+  const LAYOUTS_RIVALES = {
+    1: ['arriba-centro'],
+    2: ['arriba-izq', 'arriba-der'],
+    3: ['izq', 'arriba-centro', 'der'],
+    4: ['izq', 'arriba-izq', 'arriba-der', 'der'],
+    5: ['izq', 'arriba-izq', 'arriba-centro', 'arriba-der', 'der']
+  };
+
+  const idsRivales = (estado.rivalesOrden && estado.rivalesOrden.length > 0)
+    ? estado.rivalesOrden.filter(id => id !== miId)
+    : estado.jugadores.filter(j => j.id !== miId).map(j => j.id);
+
+  const layout = LAYOUTS_RIVALES[idsRivales.length] || [];
+
+  idsRivales.forEach((rivalId, i) => {
+    const j = estado.jugadores.find(p => p.id === rivalId);
+    if (!j) return;
+
     const esSuTurno = estado.jugadores[estado.turnoIdx]?.id === j.id;
     const div = document.createElement('div');
     div.className = `rival${esSuTurno ? ' turno-activo' : ''}`;
+    div.dataset.pos = layout[i] || 'arriba-centro';
 
     const avatarSvg = obtenerAvatarSvg(j.avatar);
 
     let cartaHtml = '';
     if ((soyEspectador || esRondaFinal) && j.mano && j.mano.length > 0) {
       const c = j.mano[0];
-      const col = PALO_COLOR[c.palo];
-      const brd = PALO_BORDER[c.palo];
+      const col = obtenerPaloColor()[c.palo];
+      const brd = obtenerPaloBorder()[c.palo];
       const ico = PALOS_SVG[c.palo]?.() || '';
       cartaHtml = `<div class="carta-mini" style="border-color:${brd};color:${col}">
         <span class="carta-mini-val" style="color:${col}">${labelValor(c.valor, c.palo)}</span>
@@ -461,8 +546,11 @@ function renderizarJuego(estado) {
       cartaMesaEl = crearCartaEl(jugada.carta, { label: autor?.nickname || '' });
       cartaMesaEl.classList.add('carta-jugada');
     }
+    cartaMesaEl.dataset.jugadorId = jugada.jugadorId;
+    if (!jugada.oculta) cartaMesaEl.dataset.valor = jugada.carta.valor;
     mesaEl.appendChild(cartaMesaEl);
   });
+
 
   // Mi mano
   const manoEl = $('mi-mano');
@@ -605,7 +693,8 @@ const LOGRO_ICONOS = {
   racha_perfecta:     '🔥',
   lo_mas_bajo:        '🔃',
   mentor:             '🎓',
-  indestructible:     '💎'
+  indestructible:     '💎',
+  mana_colchon:       '✨'
 };
 
 // ── BARRA DE MANÁ ──────────────────────────────────────────────────────────
@@ -659,6 +748,36 @@ function manaRivalHtml(j) {
 }
 
 // ── NOTIFICACIONES DE LOGRO ───────────────────────────────────────────────────
+// Cola global: los logros pueden llegar en lotes (fin de minironda, fin de
+// subronda, eventos puntuales como el 7 de Oros) muy seguidos entre sí,
+// incluso justo cuando la pantalla cambia (resumen de subronda). Para que
+// ninguna notificación se pierda o se solape con el cambio de pantalla,
+// se encolan todas y se muestran de una en una con un ritmo fijo,
+// independientemente de qué pantalla esté activa en ese momento
+// (#contenedor-logros es position:fixed y está presente en todo momento).
+const COLA_LOGROS = [];
+let colaLogrosActiva = false;
+
+function procesarColaLogros() {
+  if (colaLogrosActiva) return;
+  const siguiente = COLA_LOGROS.shift();
+  if (!siguiente) return;
+
+  colaLogrosActiva = true;
+  mostrarNotificacionLogro(siguiente);
+
+  setTimeout(() => {
+    colaLogrosActiva = false;
+    procesarColaLogros();
+  }, 450);
+}
+
+function encolarLogro(evento) {
+  if (!evento || !evento.logro) return;
+  COLA_LOGROS.push(evento);
+  procesarColaLogros();
+}
+
 function mostrarNotificacionLogro(evento) {
   if (!evento || !evento.logro) return;
   const cont = $('contenedor-logros');
@@ -676,7 +795,7 @@ function mostrarNotificacionLogro(evento) {
     <div class="logro-texto">
       <span class="logro-jugador">${esMio ? 'Tú' : evento.nickname}</span>
       <span class="logro-nombre">${evento.logro.nombre}</span>
-      <span class="logro-mana">+${evento.logro.mana} ✨</span>
+      ${evento.logro.mana > 0 ? `<span class="logro-mana">+${evento.logro.mana} ✨</span>` : ''}
     </div>
     ${evento.vidaGanada ? '<div class="logro-vida-extra">❤️ +1 vida</div>' : ''}
   `;
@@ -691,9 +810,7 @@ function mostrarNotificacionLogro(evento) {
 
 function mostrarEventosLogro(eventos) {
   if (!eventos || eventos.length === 0) return;
-  eventos.forEach((ev, i) => {
-    setTimeout(() => mostrarNotificacionLogro(ev), i * 450 + 1000);
-  });
+  eventos.forEach(ev => encolarLogro(ev));
 }
 
 // ── ESCALA INVERTIDA (JOKERS) ──────────────────────────────────────────────
@@ -950,6 +1067,7 @@ function mostrarError(msg) {
 // ── LOBBY ─────────────────────────────────────
 function renderizarSala(sala) {
   miSala = sala;
+  crearChat();
   $('codigo-sala').textContent = sala.codigo;
   const lista = $('lista-jugadores');
   lista.innerHTML = '';
@@ -966,13 +1084,23 @@ function renderizarSala(sala) {
   });
   const btnIniciar = $('btn-iniciar');
   const selectorModo = $('selector-modalidad');
+  const etiquetaModo = $('etiqueta-modo-sala');
+
+  // Fondo y etiqueta de modo — visibles para todos los jugadores de la sala
+  const modalidadSala = sala.modalidad || 'clasico';
+  miModalidad = modalidadSala;
+  aplicarFondoModalidad(modalidadSala);
+
   if (sala.creador === socket.id) {
     btnIniciar.classList.remove('oculto');
     if (selectorModo) selectorModo.classList.remove('oculto');
+    if (etiquetaModo) etiquetaModo.classList.add('oculto');
+    sincronizarBotonesModo(modalidadSala);
     $('msg-sala').textContent = sala.jugadores.length < 2 ? 'Esperando más jugadores...' : '¡Listos para jugar!';
   } else {
     btnIniciar.classList.add('oculto');
     if (selectorModo) selectorModo.classList.add('oculto');
+    if (etiquetaModo) etiquetaModo.classList.remove('oculto');
     $('msg-sala').textContent = 'Esperando al creador...';
   }
 }
@@ -1030,15 +1158,61 @@ const DESCS_MODALIDAD = {
   hardcore: '💀 Jokers, 7 de Oros árbitro, Rey inmune, maná/logros y Duelo del Prisionero en la ronda final'
 };
 
+const NOMBRES_MODALIDAD = {
+  clasico:  '⚔️ Clásico',
+  twisted:  '🃏 Twisted',
+  chaos:    '🌀 Chaos',
+  leap:     '🙈 Leap of Faith',
+  hardcore: '💀 Hardcore'
+};
+
+const MODOS_VALIDOS = ['clasico', 'twisted', 'chaos', 'leap', 'hardcore'];
+
+// Aplica el fondo correspondiente al modo de juego (clase en <body>) y
+// actualiza la etiqueta visible para que todos sepan a qué se está jugando
+function aplicarFondoModalidad(modalidad) {
+  if (!MODOS_VALIDOS.includes(modalidad)) modalidad = 'clasico';
+  document.body.classList.remove(...MODOS_VALIDOS.map(m => `fondo-${m}`));
+  document.body.classList.add(`fondo-${modalidad}`);
+
+  const etiqueta = $('etiqueta-modo-sala');
+  if (etiqueta) etiqueta.textContent = NOMBRES_MODALIDAD[modalidad] || '';
+}
+
+// Sincroniza los botones .btn-modo y la descripción con la modalidad dada
+function sincronizarBotonesModo(modalidad) {
+  document.querySelectorAll('.btn-modo').forEach(b => {
+    b.classList.toggle('activo', b.dataset.modo === modalidad);
+    b.classList.toggle('secundario', b.dataset.modo !== modalidad);
+  });
+  const desc = $('desc-modalidad');
+  if (desc) desc.textContent = DESCS_MODALIDAD[modalidad] || '';
+}
+
 document.querySelectorAll('.btn-modo').forEach(btn => {
   btn.addEventListener('click', () => {
+    // Solo el creador puede cambiar el modo desde la sala de espera
+    if (miSala && miSala.creador !== socket.id) return;
+
     miModalidad = btn.dataset.modo;
-    document.querySelectorAll('.btn-modo').forEach(b => {
-      b.classList.toggle('activo', b.dataset.modo === miModalidad);
-      b.classList.toggle('secundario', b.dataset.modo !== miModalidad);
-    });
-    $('desc-modalidad').textContent = DESCS_MODALIDAD[miModalidad] || '';
+    sincronizarBotonesModo(miModalidad);
+    aplicarFondoModalidad(miModalidad);
+
+    // Si ya estamos en una sala, avisar al servidor para que todos lo vean
+    if (miSala) {
+      socket.emit('seleccionarModalidad', { modalidad: miModalidad }, res => {
+        if (res?.error) mostrarError(res.error);
+      });
+    }
   });
+});
+
+// Otro jugador (o el propio) ha (pre)seleccionado el modo — actualizar para todos
+socket.on('modalidadSeleccionada', ({ modalidad }) => {
+  miModalidad = modalidad;
+  if (miSala) miSala.modalidad = modalidad;
+  sincronizarBotonesModo(modalidad);
+  aplicarFondoModalidad(modalidad);
 });
 
 $('btn-iniciar').addEventListener('click', () => {
@@ -1148,6 +1322,14 @@ socket.on('minirondaResuelta', ({ ganadorId, multiplicador, eventosLogro }) => {
   const mesaFlash = document.getElementById('mesa');
   mesaFlash.classList.add(ganadorId === miId ? 'flash-verde' : 'flash-rojo');
   setTimeout(() => { mesaFlash.classList.remove('flash-verde','flash-rojo'); }, 800);
+
+  // Resaltar la carta ganadora en la mesa (brillo dorado + elevación breve)
+  const cartaGanadora = document.querySelector(`#cartas-mesa [data-jugador-id="${ganadorId}"]`);
+  if (cartaGanadora) {
+    cartaGanadora.classList.add('carta-ganadora');
+    setTimeout(() => cartaGanadora.classList.remove('carta-ganadora'), 1200);
+  }
+
   $('panel-ases').classList.add('oculto');
   $('panel-7oros').classList.add('oculto');
   const estado  = miEstado;
@@ -1178,7 +1360,7 @@ socket.on('asesPendientes', ({ ases }) => {
   $('botones-as').innerHTML = '';
 });
 
-socket.on('accionAs', ({ palo, mesa }) => {
+socket.on('accionAs', ({ palo, mesa, gruposAnulados }) => {
   const panel = $('panel-ases');
   panel.classList.remove('oculto');
   const instrucciones = {
@@ -1190,20 +1372,52 @@ socket.on('accionAs', ({ palo, mesa }) => {
   const botonesEl = $('botones-as');
   botonesEl.innerHTML = '';
 
-  mesa.forEach((jugada, idx) => {
+  function crearWrapper(jugada, esAnulada) {
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer';
     const cartaEl = crearCartaEl(jugada.carta, { seleccionable: true });
+    if (esAnulada) cartaEl.classList.add('carta-anulada-objetivo');
     wrapper.appendChild(cartaEl);
+    if (esAnulada) {
+      const tag = document.createElement('span');
+      tag.textContent = '🚫 Anulada';
+      tag.style.cssText = 'font-size:0.65rem;color:var(--gris)';
+      wrapper.appendChild(tag);
+    }
+    return wrapper;
+  }
+
+  mesa.forEach((jugada, idx) => {
+    const wrapper = crearWrapper(jugada, false);
     wrapper.addEventListener('click', () => {
       const evento = palo === 'espadas' ? 'asEspadas' : 'asBastos';
-      socket.emit(evento, { cartaIdx: idx }, res => {
+      const payload = palo === 'espadas'
+        ? { objetivo: { origen: 'mesa', idx } }
+        : { cartaIdx: idx };
+      socket.emit(evento, payload, res => {
         if (res.error) mostrarError(res.error);
         else panel.classList.add('oculto');
       });
     });
     botonesEl.appendChild(wrapper);
   });
+
+  // As de Espadas: también se pueden seleccionar cartas de parejas ya anuladas
+  // (p. ej. dos Reyes anulados) — al "matar" una, la otra resucita y vuelve a mesa
+  if (palo === 'espadas' && gruposAnulados && gruposAnulados.length > 0) {
+    gruposAnulados.forEach((grupo, grupoIdx) => {
+      grupo.jugadas.forEach((jugada, idx) => {
+        const wrapper = crearWrapper(jugada, true);
+        wrapper.addEventListener('click', () => {
+          socket.emit('asEspadas', { objetivo: { origen: 'anulada', grupoIdx, idx } }, res => {
+            if (res.error) mostrarError(res.error);
+            else panel.classList.add('oculto');
+          });
+        });
+        botonesEl.appendChild(wrapper);
+      });
+    });
+  }
 
   if (palo === 'espadas') {
     const btnPasar = document.createElement('button');
@@ -1227,7 +1441,25 @@ socket.on('siete7OrosPendiente', ({ mesa }) => {
 
 // HARDCORE: logro conseguido fuera del flujo de minironda (p.ej. 7 de Oros)
 socket.on('logroConseguido', evento => {
-  mostrarNotificacionLogro(evento);
+  encolarLogro(evento);
+});
+
+// Animación sutil: cuando dos (o más) cartas se anulan por pares,
+// se "levantan" ligeramente y se desvanecen antes de desaparecer de la mesa
+socket.on('cartasAnuladas', ({ gruposAnulados }) => {
+  const mesaEl = $('cartas-mesa');
+  if (!mesaEl) return;
+
+  gruposAnulados.forEach(grupo => {
+    grupo.jugadas.forEach(jugada => {
+      const candidatos = mesaEl.querySelectorAll(`[data-jugador-id="${jugada.jugadorId}"]`);
+      candidatos.forEach(el => {
+        if (parseInt(el.dataset.valor) === jugada.carta.valor) {
+          el.classList.add('carta-anulando');
+        }
+      });
+    });
+  });
 });
 
 socket.on('mesaActualizada', ({ mesa }) => {
@@ -1237,13 +1469,16 @@ socket.on('mesaActualizada', ({ mesa }) => {
   mesaEl.innerHTML = '';
   mesa.forEach(jugada => {
     const autor = miEstado.jugadores.find(j => j.id === jugada.jugadorId);
-    mesaEl.appendChild(crearCartaEl(jugada.carta, { label: autor?.nickname || '' }));
+    const el = crearCartaEl(jugada.carta, { label: autor?.nickname || '' });
+    el.dataset.jugadorId = jugada.jugadorId;
+    el.dataset.valor = jugada.carta.valor;
+    mesaEl.appendChild(el);
   });
 });
 
 let ultimoResumen = [];
 
-socket.on('subrondaTerminada', ({ resumen, eventosLogroSubronda }) => {
+socket.on('subrondaTerminada', ({ resumen, jugadoresVivos, eventosLogroSubronda }) => {
   ultimoResumen = resumen;
   const miResumen = resumen.find(r => r.id === miId);
   if (miResumen && miResumen.vidasRestadas > 0) sonidoPierdesVidas();
@@ -1274,8 +1509,12 @@ socket.on('subrondaTerminada', ({ resumen, eventosLogroSubronda }) => {
   }
   zonaDonacion.innerHTML = '';
 
-  const soyEspectador = miEstado && !miEstado.jugadores.find(j => j.id === miId);
-  const miVidasActuales = miEstado?.jugadores.find(j => j.id === miId)?.vidas ?? 0;
+  // IMPORTANTE: no usar miEstado (puede estar desactualizado en el instante
+  // en que el jugador acaba de morir). jugadoresVivos viene recién calculado
+  // en este mismo evento, así que es la fuente fiable.
+  const soyEspectador = Array.isArray(jugadoresVivos)
+    ? !jugadoresVivos.some(j => j.id === miId)
+    : (miEstado && !miEstado.jugadores.find(j => j.id === miId));
 
   if (soyEspectador) {
     // Botón para pedir vida
@@ -1455,4 +1694,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
+aplicarFondoModalidad('clasico');
+aplicarSkinCartas(obtenerSkinActual());
 irA('entrada');

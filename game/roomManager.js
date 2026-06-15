@@ -11,7 +11,8 @@ function crearSala(socketId, nickname, token, avatar = null) {
     creador:      socketId,
     estado:       'esperando',
     partida:      null,
-    espectadores: []
+    espectadores: [],
+    modalidad:    'clasico'
   };
   if (token) tokens[token] = codigo;
   return salas[codigo];
