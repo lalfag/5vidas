@@ -7,6 +7,12 @@ let miSala      = null;
 let miEstado    = null;
 let miModalidad = "clasico";
 
+// Identificador de la última subronda para la que ya se animó el reparto de
+// "mi mano". Se usa para que la animación de cartas-nueva (popIn/reparto)
+// solo se dispare al iniciarse una subronda nueva, no en cada
+// estadoActualizado (que llega con cada acción de cualquier jugador).
+let subrondaAnimadaKey = null;
+
 const pantallas = {
   entrada:  document.getElementById('pantalla-entrada'),
   avatar:   document.getElementById('pantalla-avatar'),
@@ -389,7 +395,8 @@ function crearCartaEl(carta, opts = {}) {
   const esFigura = !esJoker && carta.valor >= 10;
   const nombreFigura = { 12: 'rey', 11: 'caballo', 10: 'sota' }[carta.valor] || '';
   const clasesEspeciales = esJoker ? ' joker' : (esAs ? ' as' : (esFigura ? ` figura ${nombreFigura}` : ''));
-  el.className = `carta ${carta.palo}${clasesEspeciales} ${opts.seleccionable ? 'seleccionable' : 'no-seleccionable'} carta-nueva`;
+  const claseNueva = opts.nueva ? ' carta-nueva' : '';
+  el.className = `carta ${carta.palo}${clasesEspeciales} ${opts.seleccionable ? 'seleccionable' : 'no-seleccionable'}${claseNueva}`;
 
   const color = obtenerPaloColor()[carta.palo];
   const val   = labelValor(carta.valor, carta.palo);
@@ -587,10 +594,19 @@ function renderizarJuego(estado) {
     }
   } else if (miJugador.mano) {
     manoEl.classList.remove('mano-chaos');
+
+    // Animación de reparto: solo la primera vez que se renderiza la mano de
+    // esta subronda (evita que el popIn/vuelo se repita en cada
+    // estadoActualizado que llega por cualquier acción de cualquier jugador)
+    const claveSubronda = `${estado.subrondaActual}`;
+    const esRepartoNuevo = subrondaAnimadaKey !== claveSubronda;
+    if (esRepartoNuevo) subrondaAnimadaKey = claveSubronda;
+
     miJugador.mano.forEach((carta, idx) => {
       const puedoJugar = estado.fase === 'juego' && esMiTurno;
       manoEl.appendChild(crearCartaEl(carta, {
         seleccionable: puedoJugar,
+        nueva: esRepartoNuevo,
         onClick: puedoJugar ? () => jugarCarta(idx) : null
       }));
     });
@@ -727,11 +743,18 @@ function actualizarPanelEconomiaVegas(estado) {
 
   const filasRivales = estado.jugadores
     .filter(j => j.id !== miId)
-    .map(j => `<span class="moneda-rival">${j.nickname}: ${estado.vegas.monedas?.[j.id] ?? 0} 🪙</span>`)
+    .map(j => {
+      const arriesgado = j.apuestaMonedas;
+      const tag = arriesgado !== null ? ` <span class="moneda-rival-apuesta">(🎲 ${arriesgado})</span>` : '';
+      return `<span class="moneda-rival">${j.nickname}: ${estado.vegas.monedas?.[j.id] ?? 0} 🪙${tag}</span>`;
+    })
     .join('');
 
+  const miApuesta = estado.jugadores.find(j => j.id === miId)?.apuestaMonedas;
+  const miTag = miApuesta !== null && miApuesta !== undefined ? ` <span class="moneda-rival-apuesta">(🎲 ${miApuesta})</span>` : '';
+
   cont.innerHTML = `
-    <div class="economia-vegas-fila economia-vegas-mias">🪙 Tus monedas: <strong>${miSaldo}</strong></div>
+    <div class="economia-vegas-fila economia-vegas-mias">🪙 Tus monedas: <strong>${miSaldo}</strong>${miTag}</div>
     <div class="economia-vegas-fila economia-vegas-rivales">${filasRivales}</div>
     <div class="economia-vegas-fila economia-vegas-bancas">
       <span title="Resto del bote de vidas, se reparte cuando alcance para un número exacto">🏦 Banco vidas: ${estado.vegas.bancaVidas}</span>
@@ -1431,6 +1454,7 @@ socket.on('salaActualizada', sala => {
 
 socket.on('partidaIniciada', () => {
   sonidoInicio();
+  subrondaAnimadaKey = null; // forzar animación de reparto en la primera subronda
   irA('juego');
   if (!document.getElementById('panel-reacciones')) crearPanelReacciones();
   crearChat();
@@ -1836,6 +1860,7 @@ socket.on('salaReseteada', ({ sala }) => {
   miSala = sala;
   miEstado = null;
   ultimoResumen = [];
+  subrondaAnimadaKey = null;
   renderizarSala(sala);
   irA('sala');
 

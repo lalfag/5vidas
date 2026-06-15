@@ -854,8 +854,10 @@ function vistaPublica(partida, miId) {
       apuesta:      esRondaFinal
         ? (todosApostaron || j.id === miId ? j.apuesta : null)
         : j.apuesta,
-      // VEGAS: cada jugador ve su propia apuesta de monedas; espectadores ven todas
-      apuestaMonedas: (j.id === miId || soyEspectador) ? j.apuestaMonedas : null,
+      // VEGAS: visible para todos, igual que la apuesta de bazas
+      apuestaMonedas: esRondaFinal
+        ? (todosApostaron || j.id === miId ? j.apuestaMonedas : null)
+        : j.apuestaMonedas,
       bazasGanadas: j.bazasGanadas,
       cartasEnMano: j.mano.length,
       manoBarajada: j.manoBarajada || false,

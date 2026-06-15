@@ -850,6 +850,7 @@ button:disabled {
 .economia-vegas-mias { font-size: 0.85rem; color: var(--dorado); }
 .economia-vegas-mias strong { font-size: 1rem; }
 .moneda-rival { color: var(--gris); }
+.moneda-rival-apuesta { color: var(--dorado); font-weight: 600; }
 .economia-vegas-bancas { font-size: 0.72rem; color: rgba(255,255,255,0.45); gap: 1rem; }
 
 /* ── MENSAJE JUEGO ── */
