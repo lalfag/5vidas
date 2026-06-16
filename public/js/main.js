@@ -470,10 +470,13 @@ function renderizarJuego(estado) {
     : miJugador.nickname;
   const vidasEl = $('mis-vidas');
   const vidasAntes = vidasEl.textContent;
-  const vidasNuevas = soyEspectador ? '💀 Eliminado' : `❤️ ${miJugador.vidas}`;
+  const esVegas = estado.modalidad === 'vegas';
+  const vidasNuevas = soyEspectador ? '💀 Eliminado'
+    : esVegas ? `🪙 ${estado.vegas?.monedas?.[miId] ?? 0}`
+    : `❤️ ${miJugador.vidas}`;
   if (vidasAntes !== vidasNuevas) {
     vidasEl.classList.remove('shake','latido');
-    void vidasEl.offsetWidth; // reflow
+    void vidasEl.offsetWidth;
     vidasEl.classList.add(miJugador.vidas < parseInt(vidasAntes.replace(/[^0-9]/g,'')) ? 'shake' : 'latido');
     setTimeout(() => vidasEl.classList.remove('shake','latido'), 400);
   }
@@ -530,7 +533,7 @@ function renderizarJuego(estado) {
     div.innerHTML = `
       ${avatarSvg ? `<div class="rival-avatar">${avatarSvg}</div>` : ''}
       <span class="nombre">${j.nickname}</span>
-      <span class="vidas">❤️ ${j.vidas}</span>
+      <span class="vidas">${esVegas ? `🪙 ${estado.vegas?.monedas?.[j.id] ?? 0}` : `❤️ ${j.vidas}`}</span>
       <span class="apuesta-rival">${j.apuesta !== null ? `Apostó: ${j.apuesta}` : '—'}</span>
       <span style="font-size:0.72rem;color:#4caf50">Bazas: ${j.bazasGanadas}/${j.apuesta !== null ? j.apuesta : '?'}</span>
       <span style="font-size:0.72rem;color:#aaa">${j.cartasEnMano} carta${j.cartasEnMano !== 1 ? 's' : ''}</span>
@@ -615,7 +618,6 @@ function renderizarJuego(estado) {
   // Panel apuestas
   const panelApuestas = $('panel-apuestas');
   const apuestaSimultanea = esRondaFinal && ['clasico', 'vegas'].includes(estado.modalidad);
-  const esVegas = estado.modalidad === 'vegas';
 
   // VEGAS: segundo paso del turno — ya aposté bazas pero me falta apostar
   // monedas. Tiene prioridad sobre el panel de apuestas normal.
@@ -787,6 +789,7 @@ function mostrarResultadosVegas(vegas) {
   });
 
   const ETIQUETAS_MOTIVO = {
+    vidas_perdidas:          '📉 Bazas falladas',
     bote_vidas:              '🏦 Bote de vidas',
     apuesta_perdida:         '🎲 Apuesta perdida',
     apuesta_ganada:          '🎲 Apuesta acertada',
@@ -1715,12 +1718,12 @@ socket.on('subrondaTerminada', ({ resumen, jugadoresVivos, eventosLogroSubronda,
     : (miEstado && !miEstado.jugadores.find(j => j.id === miId));
 
   if (soyEspectador) {
-    // Botón para pedir vida
+    const esVegasResumen = miEstado?.modalidad === 'vegas';
     const bocadillo = document.createElement('div');
     bocadillo.className = 'bocadillo-pedir';
     bocadillo.innerHTML = `
       <p>💀 Estás eliminado</p>
-      <button id="btn-pedir-vida">🙏 Pedir una vida</button>
+      <button id="btn-pedir-vida">${esVegasResumen ? '🙏 Pedir 10 monedas' : '🙏 Pedir una vida'}</button>
       <p id="msg-pedir-vida" class="info"></p>
     `;
     zonaDonacion.appendChild(bocadillo);
@@ -1751,22 +1754,25 @@ socket.on('subrondaTerminada', ({ resumen, jugadoresVivos, eventosLogroSubronda,
 socket.on('peticionVida', ({ solicitanteId, nickname }) => {
   let zonaDonacion = $('zona-donacion');
   if (!zonaDonacion) return;
-
-  // Evitar duplicados
   if (document.getElementById(`peticion-${solicitanteId}`)) return;
 
+  const esVegasPeticion = miEstado?.modalidad === 'vegas';
   const miVidasActuales = miEstado?.jugadores.find(j => j.id === miId)?.vidas ?? 0;
+  const misMonedasActuales = miEstado?.modalidad === 'vegas'
+    ? (miEstado?.vegas?.monedas?.[miId] ?? 0) : null;
   const soyVivo = miEstado?.jugadores.some(j => j.id === miId);
-  if (!soyVivo) return; // espectadores no ven el botón de donar
+  if (!soyVivo) return;
+
+  const puedeDonar = esVegasPeticion ? (misMonedasActuales >= 20) : (miVidasActuales > 1);
 
   const peticion = document.createElement('div');
   peticion.id = `peticion-${solicitanteId}`;
   peticion.className = 'bocadillo-peticion';
   peticion.innerHTML = `
-    <span>🙏 <strong>${nickname}</strong> pide una vida</span>
-    ${miVidasActuales > 1
-      ? `<button class="btn-donar" data-id="${solicitanteId}" data-nick="${nickname}">❤️ Donar</button>`
-      : `<span class="donar-imposible">Sin vidas para donar</span>`
+    <span>🙏 <strong>${nickname}</strong> pide ${esVegasPeticion ? '10 monedas' : 'una vida'}</span>
+    ${puedeDonar
+      ? `<button class="btn-donar" data-id="${solicitanteId}" data-nick="${nickname}">${esVegasPeticion ? '🪙 Donar 10' : '❤️ Donar'}</button>`
+      : `<span class="donar-imposible">${esVegasPeticion ? 'Menos de 20 monedas' : 'Sin vidas para donar'}</span>`
     }
   `;
   zonaDonacion.appendChild(peticion);
@@ -1774,33 +1780,35 @@ socket.on('peticionVida', ({ solicitanteId, nickname }) => {
 
 // Confirmación de donación
 socket.on('vidaDonada', ({ donanteId, donanteNick, donantesVidas, receptorId, receptorNick }) => {
-  // Eliminar la petición de la UI
   const peticion = document.getElementById(`peticion-${receptorId}`);
   if (peticion) peticion.remove();
 
-  // Mensaje informativo
+  const esVegasDonacion = miEstado?.modalidad === 'vegas';
   const zonaDonacion = $('zona-donacion');
   if (zonaDonacion) {
     const aviso = document.createElement('div');
     aviso.className = 'bocadillo-donado';
-    aviso.textContent = `❤️ ${donanteNick} le dio una vida a ${receptorNick}`;
+    aviso.textContent = esVegasDonacion
+      ? `🪙 ${donanteNick} le dio 10 monedas a ${receptorNick}`
+      : `❤️ ${donanteNick} le dio una vida a ${receptorNick}`;
     zonaDonacion.appendChild(aviso);
   }
 
-  mostrarMsgJuego(`❤️ ${donanteNick} → ${receptorNick}: vida donada`);
+  mostrarMsgJuego(esVegasDonacion
+    ? `🪙 ${donanteNick} → ${receptorNick}: 10 monedas donadas`
+    : `❤️ ${donanteNick} → ${receptorNick}: vida donada`);
 });
 
 // Delegación para botones donar (creados dinámicamente)
 document.addEventListener('click', e => {
   if (!e.target.matches('.btn-donar')) return;
   const solicitanteId = e.target.dataset.id;
-  const nick = e.target.dataset.nick;
   e.target.disabled = true;
   e.target.textContent = '...';
   socket.emit('donarVida', { solicitanteId }, res => {
     if (res.error) {
       e.target.disabled = false;
-      e.target.textContent = '❤️ Donar';
+      e.target.textContent = miEstado?.modalidad === 'vegas' ? '🪙 Donar 10' : '❤️ Donar';
       mostrarMsgJuego(`⚠️ ${res.error}`);
     }
   });

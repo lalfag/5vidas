@@ -219,89 +219,71 @@ function finalizarMinironda(sala, ganadorId, contextoLogros = null) {
 }
 
 // VEGAS: resuelve la economía de la subronda.
-//   resumen: array ya poblado con { id, vidasRestadas, ... } por jugador
-//            (jugador.apuesta y jugador.apuestaMonedas siguen intactos en
-//            partida.jugadores en este punto, aún no se han reseteado).
-// Devuelve un objeto con el detalle de movimientos para informar al cliente,
-// y muta partida.vegas.monedas / bancaVidas / bancaApuestas.
+// Modelo:
+//   • Fallar bazas → pierdes 10 monedas × vidasRestadas de tu saldo.
+//     Esas monedas van al bote de vidas que se reparte entre quienes acertaron.
+//   • Apuesta de monedas ("cuán seguro estás") → la banca (ilimitada) paga a
+//     los acertantes (×2 lo arriesgado) y se queda lo que pierden los que fallan.
+//     Los fallos SÍ descuentan monedas del jugador (van a la banca, no circulan).
 function resolverEconomiaVegas(partida) {
-  const vegas   = partida.vegas;
-  const movimientos = []; // [{ jugadorId, nickname, delta, motivo }]
+  const vegas = partida.vegas;
+  const movimientos = [];
 
-  // ── PASO A: BOTE DE VIDAS ──────────────────────────────────────────────
+  // ── PASO A: BOTE DE VIDAS ─────────────────────────────────────────────
+  // Los jugadores que fallan su apuesta de bazas pierden 10 monedas por vida
+  // restada. Esas monedas salen de su saldo y van al bote que se reparte.
   let boteVidas = vegas.bancaVidas;
   partida.jugadores.forEach(j => {
     const restar = calcularVidasARestar(j.apuesta, j.bazasGanadas);
-    boteVidas += restar * MONEDAS_POR_VIDA;
+    if (restar === 0) return;
+    const coste = restar * MONEDAS_POR_VIDA;
+    const saldo = vegas.monedas[j.id] ?? 0;
+    const descuento = Math.min(coste, saldo); // no puede quedar en negativo
+    vegas.monedas[j.id] = saldo - descuento;
+    boteVidas += descuento;
+    movimientos.push({ jugadorId: j.id, nickname: j.nickname, delta: -descuento, motivo: 'vidas_perdidas' });
   });
 
   const ganadoresVidas = partida.jugadores.filter(j =>
     calcularVidasARestar(j.apuesta, j.bazasGanadas) === 0
   );
-
   if (ganadoresVidas.length > 0) {
     const parte = Math.floor(boteVidas / ganadoresVidas.length);
     const resto = boteVidas % ganadoresVidas.length;
     ganadoresVidas.forEach(j => {
       vegas.monedas[j.id] = (vegas.monedas[j.id] ?? 0) + parte;
-      if (parte > 0) {
-        movimientos.push({ jugadorId: j.id, nickname: j.nickname, delta: parte, motivo: 'bote_vidas' });
-      }
+      if (parte > 0) movimientos.push({ jugadorId: j.id, nickname: j.nickname, delta: parte, motivo: 'bote_vidas' });
     });
     vegas.bancaVidas = resto;
   } else {
-    // Nadie acertó su apuesta de bazas esta subronda — todo el bote de
-    // vidas pasa íntegro a la banca para la siguiente subronda
-    vegas.bancaVidas = boteVidas;
+    vegas.bancaVidas = boteVidas; // nadie acierta → todo a banca
   }
 
-  // ── PASO B: BOTE DE APUESTAS (monedas arriesgadas sobre la apuesta de bazas) ──
-  const acertantes = []; // { jugador, arriesgado }
-  let boteApuestas = vegas.bancaApuestas;
-
+  // ── PASO B: APUESTAS DE MONEDAS (banca ilimitada) ─────────────────────
+  // Quien falla: pierde lo arriesgado (sale de su saldo, va a la banca).
+  // Quien acierta: recibe el doble de lo arriesgado (la banca lo paga).
+  // Los dos flujos son independientes — no circula dinero entre jugadores aquí.
   partida.jugadores.forEach(j => {
     const arriesgado = j.apuestaMonedas || 0;
     if (arriesgado <= 0) return;
-
     const acerto = calcularVidasARestar(j.apuesta, j.bazasGanadas) === 0;
     if (acerto) {
-      acertantes.push({ jugador: j, arriesgado });
+      // La banca paga el doble (no sale de otros jugadores)
+      vegas.monedas[j.id] = (vegas.monedas[j.id] ?? 0) + arriesgado * 2;
+      movimientos.push({ jugadorId: j.id, nickname: j.nickname, delta: arriesgado * 2, motivo: 'apuesta_ganada' });
     } else {
-      // Falla: pierde lo arriesgado, va al bote de apuestas
-      vegas.monedas[j.id] = Math.max(0, (vegas.monedas[j.id] ?? 0) - arriesgado);
-      boteApuestas += arriesgado;
-      movimientos.push({ jugadorId: j.id, nickname: j.nickname, delta: -arriesgado, motivo: 'apuesta_perdida' });
+      // Pierde lo arriesgado (ya lo había apartado mentalmente el jugador)
+      const saldo = vegas.monedas[j.id] ?? 0;
+      const descuento = Math.min(arriesgado, saldo);
+      vegas.monedas[j.id] = saldo - descuento;
+      movimientos.push({ jugadorId: j.id, nickname: j.nickname, delta: -descuento, motivo: 'apuesta_perdida' });
     }
   });
 
-  const totalAPagar = acertantes.reduce((acc, a) => acc + a.arriesgado * 2, 0);
-
-  if (totalAPagar === 0) {
-    // Nadie acertó con monedas en juego — el bote de apuestas (si lo hay)
-    // queda íntegro para la siguiente subronda
-    vegas.bancaApuestas = boteApuestas;
-  } else if (boteApuestas >= totalAPagar) {
-    // El bote alcanza para pagar el doble completo a todos los acertantes
-    acertantes.forEach(({ jugador, arriesgado }) => {
-      const premio = arriesgado * 2;
-      vegas.monedas[jugador.id] = (vegas.monedas[jugador.id] ?? 0) + premio;
-      movimientos.push({ jugadorId: jugador.id, nickname: jugador.nickname, delta: premio, motivo: 'apuesta_ganada' });
-    });
-    vegas.bancaApuestas = boteApuestas - totalAPagar;
-  } else {
-    // El bote no alcanza: reparto a prorrata según lo arriesgado por cada
-    // acertante. El resto de redondeo queda en la banca de apuestas.
-    let repartido = 0;
-    acertantes.forEach(({ jugador, arriesgado }) => {
-      const proporcional = Math.floor(boteApuestas * (arriesgado * 2) / totalAPagar);
-      vegas.monedas[jugador.id] = (vegas.monedas[jugador.id] ?? 0) + proporcional;
-      repartido += proporcional;
-      if (proporcional > 0) {
-        movimientos.push({ jugadorId: jugador.id, nickname: jugador.nickname, delta: proporcional, motivo: 'apuesta_ganada_prorrata' });
-      }
-    });
-    vegas.bancaApuestas = boteApuestas - repartido;
-  }
+  // Sincronizar vidas con monedas (1 vida = 10 monedas, mínimo 0)
+  partida.jugadores.forEach(j => {
+    j.vidas = Math.floor((vegas.monedas[j.id] ?? 0) / MONEDAS_POR_VIDA);
+  });
 
   return {
     monedas:       { ...vegas.monedas },
@@ -331,8 +313,11 @@ function finalizarSubronda(sala) {
       j._manoPrevia && j._manoPrevia.some(c => c.valor >= 10);
     const eraUnicoConUnaVida = unicoConUnaVida === j.id;
 
-    j.vidas -= restar;
-    if (j.vidas < 0) j.vidas = 0;
+    // VEGAS: las vidas las gestiona resolverEconomiaVegas (monedas → vidas)
+    if (!partida.config.economia) {
+      j.vidas -= restar;
+      if (j.vidas < 0) j.vidas = 0;
+    }
 
     // HARDCORE: colchón de maná lleno al perder vida con cap máximo
     if (partida.config.hardcore && j.mana && restar > 0) {
@@ -377,6 +362,12 @@ function finalizarSubronda(sala) {
   let eventoVegas = null;
   if (partida.config.economia) {
     eventoVegas = resolverEconomiaVegas(partida);
+    // Actualizar vidasRestantes en el resumen con las vidas ya sincronizadas
+    // desde monedas (resolverEconomiaVegas hace j.vidas = floor(monedas/10))
+    resumen.forEach(r => {
+      const j = partida.jugadores.find(p => p.id === r.id);
+      if (j) r.vidasRestantes = j.vidas;
+    });
   }
 
   const nuevosEspectadores = partida.jugadores.filter(j => j.vidas <= 0);
@@ -764,22 +755,32 @@ io.on('connection', (socket) => {
 
     const donante = sala.partida.jugadores.find(j => j.id === socket.id);
     if (!donante) return callback({ error: 'No eres un jugador activo' });
-    if (donante.vidas <= 1) return callback({ error: 'No puedes donar, te quedarías sin vidas' });
 
     const receptor = sala.espectadores?.find(j => j.id === solicitanteId);
     if (!receptor) return callback({ error: 'El receptor no existe o ya fue resucitado' });
 
-    // Transferir vida
-    donante.vidas -= 1;
-    receptor.vidas = 1;
-    receptor.pidioVidaEstaRonda = true;
+    const esVegas = sala.partida.config.economia;
 
-    // Sacar al receptor de espectadores y meterlo de vuelta en jugadores
+    if (esVegas) {
+      // Vegas: donar 10 monedas (= 1 vida)
+      const monedas = sala.partida.vegas.monedas;
+      if ((monedas[donante.id] ?? 0) < 20) return callback({ error: 'Necesitas al menos 20 monedas para donar' });
+      monedas[donante.id] -= MONEDAS_POR_VIDA;
+      monedas[receptor.id] = (monedas[receptor.id] ?? 0) + MONEDAS_POR_VIDA;
+      donante.vidas = Math.floor(monedas[donante.id] / MONEDAS_POR_VIDA);
+      receptor.vidas = Math.floor(monedas[receptor.id] / MONEDAS_POR_VIDA);
+    } else {
+      if (donante.vidas <= 1) return callback({ error: 'No puedes donar, te quedarías sin vidas' });
+      donante.vidas -= 1;
+      receptor.vidas = 1;
+    }
+
+    receptor.pidioVidaEstaRonda = true;
     sala.espectadores = sala.espectadores.filter(j => j.id !== solicitanteId);
     receptor.espectador = false;
     sala.partida.jugadores.push(receptor);
 
-    console.log(`[VIDA] ${donante.nickname} donó una vida a ${receptor.nickname}`);
+    console.log(`[VIDA] ${donante.nickname} donó ${esVegas ? '10 monedas' : 'una vida'} a ${receptor.nickname}`);
 
     io.to(sala.codigo).emit('vidaDonada', {
       donanteId:       donante.id,
