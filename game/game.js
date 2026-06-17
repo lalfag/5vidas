@@ -443,10 +443,14 @@ function registrarApuestaMonedas(partida, jugadorId, cantidadMonedas) {
   const saldo = partida.vegas.monedas[jugadorId] ?? 0;
   cantidadMonedas = Math.floor(cantidadMonedas);
 
-  if (saldo <= 0) {
-    cantidadMonedas = 0;
-  } else if (cantidadMonedas < 1 || cantidadMonedas > saldo) {
-    return { error: `Debes arriesgar entre 1 y ${saldo} monedas` };
+  const maximo = Math.floor(saldo * 0.20);
+
+  if (cantidadMonedas === 0) {
+    // Pasar: válido siempre (no arriesga nada)
+  } else if (saldo <= 0 || maximo === 0) {
+    cantidadMonedas = 0; // forzar a 0 si no puede apostar
+  } else if (cantidadMonedas < 1 || cantidadMonedas > maximo) {
+    return { error: `Debes arriesgar entre 1 y ${maximo} monedas (20% de tu saldo)` };
   }
 
   jugador.apuestaMonedas = cantidadMonedas;

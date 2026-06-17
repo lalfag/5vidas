@@ -1,6 +1,12 @@
 import { sonidoCarta, sonidoBazaGanada, sonidoBazaPerdida, sonidoPierdesVidas, sonidoAs, sonidoInicio, sonidoEliminado, sonidoVictoria, sonidoCartaEspecial } from '/js/sounds.js';
 
-const socket = io();
+const socket = io({
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 500,
+  reconnectionDelayMax: 5000,
+  timeout: 10000
+});
 
 let miId        = null;
 let miSala      = null;
@@ -634,6 +640,7 @@ function renderizarJuego(estado) {
     if (!soyEspectador && estado.fase === 'apuestas' && miJugador.apuesta === null && (apuestaSimultanea || esMiTurno)) {
       panelApuestas.classList.remove('oculto');
       renderizarBotonesApuesta(estado);
+      requestAnimationFrame(() => panelApuestas.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
     } else {
       panelApuestas.classList.add('oculto');
     }
@@ -684,46 +691,49 @@ function renderizarPanelMonedas(estado, miJugador) {
   if (!panel) return;
   panel.classList.remove('oculto');
 
-  const saldo = estado.vegas?.monedas?.[miId] ?? 0;
+  const saldo  = estado.vegas?.monedas?.[miId] ?? 0;
+  const maximo = Math.floor(saldo * 0.20);
 
-  if (saldo <= 0) {
-    // Sin monedas: se resuelve automáticamente en el servidor con 0, pero
-    // por si el cliente llega a renderizar este estado, informamos y listo
-    panel.innerHTML = `<p>🎰 No tienes monedas para arriesgar esta subronda.</p>`;
+  if (saldo <= 0 || maximo === 0) {
+    panel.innerHTML = `<p>🎰 Apostaste <strong>${miJugador.apuesta}</strong> bazas. Con menos de 5 monedas no puedes apostar seguridad esta subronda.</p>`;
+    // Auto-confirmar con 0 para no bloquear el flujo
+    setTimeout(() => apostarMonedas(0), 800);
     return;
   }
 
-  // Evitar reconstruir el slider en cada render si el valor no ha cambiado
-  // (mantiene la posición mientras el usuario interactúa)
   if (panel.dataset.saldo !== String(saldo)) {
     panel.dataset.saldo = String(saldo);
     panel.innerHTML = `
-      <p>🎰 Apostaste <strong>${miJugador.apuesta}</strong> bazas. ¿Cuántas monedas arriesgas? (1–${saldo})</p>
-      <p style="font-size:0.8rem;color:var(--gris)">Si aciertas tu apuesta exacta, las doblas. Si fallas, las pierdes.</p>
+      <p>🎰 Apostaste <strong>${miJugador.apuesta}</strong> bazas. ¿Cuántas monedas arriesgas? (máx. 20% = ${maximo}🪙)</p>
+      <p style="font-size:0.8rem;color:var(--gris)">Si aciertas exacto, las doblas. Si fallas, las pierdes.</p>
       <div style="display:flex;align-items:center;gap:0.6rem;justify-content:center;flex-wrap:wrap">
-        <input type="range" id="slider-monedas" min="1" max="${saldo}" value="1" style="flex:1;min-width:140px">
+        <input type="range" id="slider-monedas" min="1" max="${maximo}" value="1" style="flex:1;min-width:140px">
         <span id="valor-monedas" style="font-weight:700;color:var(--dorado);min-width:3ch;text-align:right">1</span>
         <span>🪙</span>
       </div>
       <div style="display:flex;gap:0.4rem;justify-content:center;flex-wrap:wrap;margin-top:0.4rem">
-        <button class="btn-monedas-rapido" data-pct="0">Mín. (1)</button>
-        <button class="btn-monedas-rapido" data-pct="0.25">25%</button>
-        <button class="btn-monedas-rapido" data-pct="0.5">50%</button>
-        <button class="btn-monedas-rapido" data-pct="1">Todo (${saldo})</button>
+        <button class="btn-monedas-rapido" data-val="1">Mín. (1)</button>
+        <button class="btn-monedas-rapido" data-val="${Math.max(1,Math.floor(maximo*0.5))}">50%</button>
+        <button class="btn-monedas-rapido" data-val="${maximo}">Máx. (${maximo})</button>
+        <button class="btn-monedas-rapido" data-val="0">Pasar</button>
       </div>
-      <button id="btn-confirmar-monedas" style="margin-top:0.6rem">Confirmar apuesta 🎰</button>
+      <button id="btn-confirmar-monedas" style="margin-top:0.6rem">Confirmar 🎰</button>
     `;
 
-    const slider = $('slider-monedas');
+    const slider  = $('slider-monedas');
     const valorEl = $('valor-monedas');
     slider.addEventListener('input', () => { valorEl.textContent = slider.value; });
 
     panel.querySelectorAll('.btn-monedas-rapido').forEach(btn => {
       btn.addEventListener('click', () => {
-        const pct = parseFloat(btn.dataset.pct);
-        const valor = pct === 0 ? 1 : Math.max(1, Math.round(saldo * pct));
-        slider.value = valor;
-        valorEl.textContent = valor;
+        const val = parseInt(btn.dataset.val, 10);
+        if (val === 0) {
+          // Pasar: no apostar nada
+          apostarMonedas(0);
+        } else {
+          slider.value = val;
+          valorEl.textContent = val;
+        }
       });
     });
 
@@ -1443,6 +1453,31 @@ socket.on('connect', () => {
   miId = socket.id;
   const token = sessionStorage.getItem('cincoVidasToken');
   if (token) socket.emit('registrarToken', { token });
+});
+
+// Móvil: cuando la pestaña/app vuelve al foco, verificar conexión y reconectar
+// si es necesario. Cubre: bloqueo de pantalla, cambio de app, modo avión corto.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    if (!socket.connected) {
+      socket.connect();
+    } else {
+      // Incluso conectado, re-enviar el token para reasociarse a la sala
+      // en caso de que el servidor haya limpiado el estado del socket
+      const token = sessionStorage.getItem('cincoVidasToken');
+      if (token) socket.emit('registrarToken', { token });
+    }
+  }
+});
+
+// Desconexión: intentar reconectar automáticamente siempre
+socket.on('disconnect', (reason) => {
+  console.log('[socket] desconectado:', reason);
+  if (reason === 'io server disconnect') {
+    // El servidor forzó la desconexión — esperar un poco y reconectar
+    setTimeout(() => socket.connect(), 1000);
+  }
+  // Para 'transport close', 'ping timeout', etc. socket.io ya reintenta solo
 });
 
 socket.on('tokenInvalido', () => {

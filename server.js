@@ -24,7 +24,14 @@ const dueloTimers = {};         // codigoSala → timeout
 
 const app = express();
 const httpServer = http.createServer(app);
-const io = new Server(httpServer);
+const io = new Server(httpServer, {
+  // Valores permisivos para conexiones móviles que pueden pausarse en background
+  pingTimeout:  60000,  // 60s sin respuesta al ping → desconexión
+  pingInterval: 15000,  // ping cada 15s
+  connectTimeout: 10000,
+  // Permitir reconexión con upgrade posterior si el websocket falla
+  transports: ['polling', 'websocket']
+});
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static('public'));
@@ -230,24 +237,29 @@ function resolverEconomiaVegas(partida) {
   const movimientos = [];
 
   // ── PASO A: BOTE DE VIDAS ─────────────────────────────────────────────
-  // Los jugadores que fallan su apuesta de bazas pierden 10 monedas por vida
-  // restada. Esas monedas salen de su saldo y van al bote que se reparte.
-  let boteVidas = vegas.bancaVidas;
-  partida.jugadores.forEach(j => {
-    const restar = calcularVidasARestar(j.apuesta, j.bazasGanadas);
-    if (restar === 0) return;
-    const coste = restar * MONEDAS_POR_VIDA;
-    const saldo = vegas.monedas[j.id] ?? 0;
-    const descuento = Math.min(coste, saldo); // no puede quedar en negativo
-    vegas.monedas[j.id] = saldo - descuento;
-    boteVidas += descuento;
-    movimientos.push({ jugadorId: j.id, nickname: j.nickname, delta: -descuento, motivo: 'vidas_perdidas' });
-  });
-
+  // Solo se descuentan monedas a los que fallan si hay al menos un ganador
+  // que las vaya a recibir. Si nadie acertó, nadie pierde nada esa ronda
+  // (no tiene sentido penalizar si el bote no va a ningún sitio) y el
+  // bote acumulado de bancaVidas se arrastra a la siguiente subronda.
   const ganadoresVidas = partida.jugadores.filter(j =>
     calcularVidasARestar(j.apuesta, j.bazasGanadas) === 0
   );
+
+  let boteVidas = vegas.bancaVidas;
+
   if (ganadoresVidas.length > 0) {
+    // Hay ganadores: descontar a los que fallaron
+    partida.jugadores.forEach(j => {
+      const restar = calcularVidasARestar(j.apuesta, j.bazasGanadas);
+      if (restar === 0) return;
+      const coste = restar * MONEDAS_POR_VIDA;
+      const saldo = vegas.monedas[j.id] ?? 0;
+      const descuento = Math.min(coste, saldo);
+      vegas.monedas[j.id] = saldo - descuento;
+      boteVidas += descuento;
+      movimientos.push({ jugadorId: j.id, nickname: j.nickname, delta: -descuento, motivo: 'vidas_perdidas' });
+    });
+
     const parte = Math.floor(boteVidas / ganadoresVidas.length);
     const resto = boteVidas % ganadoresVidas.length;
     ganadoresVidas.forEach(j => {
@@ -256,7 +268,8 @@ function resolverEconomiaVegas(partida) {
     });
     vegas.bancaVidas = resto;
   } else {
-    vegas.bancaVidas = boteVidas; // nadie acierta → todo a banca
+    // Nadie acertó: bote intacto, se arrastra a la próxima subronda
+    vegas.bancaVidas = boteVidas;
   }
 
   // ── PASO B: APUESTAS DE MONEDAS (banca ilimitada) ─────────────────────
@@ -507,6 +520,15 @@ io.on('connection', (socket) => {
 
     socket.join(sala.codigo);
     console.log(`[RECONEXIÓN] ${jugador?.nickname || jLobby?.nickname} reconectado`);
+
+    // VEGAS: migrar la entrada de monedas del ID antiguo al nuevo socket ID
+    if (sala.partida?.config.economia && sala.partida.vegas && socketAntiguo && socketAntiguo !== socket.id) {
+      const monedas = sala.partida.vegas.monedas;
+      if (socketAntiguo in monedas) {
+        monedas[socket.id] = monedas[socketAntiguo];
+        delete monedas[socketAntiguo];
+      }
+    }
 
     if (sala.estado === 'jugando' && sala.partida) {
       socket.emit('partidaIniciada');
