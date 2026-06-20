@@ -18,6 +18,11 @@ const {
   resolverMinironda, aplicarAsOros, aplicarAsEspadas,
   aplicarAsBastos, calcularVidasARestar
 } = require('./game/resolver');
+const {
+  esBot, crearJugadorBot, calcularApuesta,
+  elegirCarta, elegirObjetivoAsEspadas, elegirObjetivoAsBastos,
+  elegirEleccionDuelo, BOT_DELAY_MS
+} = require('./game/bot');
 
 const DUELO_TIMEOUT_MS = 20000; // 20s para el duelo del prisionero
 const dueloTimers = {};         // codigoSala → timeout
@@ -162,6 +167,9 @@ function gestionarAses(sala, resultado) {
 
   if (sala.partida.resolucion.asesPendientes.length === 0 && !siete7OrosActivo) {
     comprobarAsesResueltos(sala);
+  } else {
+    // Si algún as pendiente pertenece a un bot, procesarlo automáticamente
+    procesarAsesBot(sala);
   }
 
   return true;
@@ -217,8 +225,10 @@ function finalizarMinironda(sala, ganadorId, contextoLogros = null) {
       partida.turnoIdx        = partida.iniciadorIdx;
       partida.fase            = 'juego';
       partida.mesa            = [];
-      partida.inversionEscala = false; // HARDCORE: el joker solo afecta a SU minironda
+      partida.inversionEscala = false;
       emitirEstado(sala);
+      iniciarTurnoTimer(sala);
+      dispararBotSiProcede(sala); // el ganador de la baza puede ser un bot
     } else {
       finalizarSubronda(sala);
     }
@@ -456,6 +466,129 @@ function comprobarAsesResueltos(sala) {
   finalizarMinironda(sala, ganador);
 }
 
+// ── BOTS ──────────────────────────────────────────────────────────────────────
+
+// Añade N bots a la sala (en el lobby, antes de iniciar la partida)
+function agregarBots(sala, cantidad) {
+  const maxJugadores = 6;
+  const libres = maxJugadores - sala.jugadores.length;
+  const n = Math.min(cantidad, libres);
+  for (let i = 0; i < n; i++) {
+    const bot = crearJugadorBot(sala.jugadores.length);
+    sala.jugadores.push(bot);
+  }
+  return sala;
+}
+
+// Comprueba si el turno actual corresponde a un bot y lo procesa con delay
+function dispararBotSiProcede(sala) {
+  if (!sala.partida) return;
+  const partida = sala.partida;
+  const jugActual = partida.jugadores[partida.turnoIdx];
+  if (!jugActual || !esBot(jugActual.id)) return;
+
+  setTimeout(() => {
+    if (!sala.partida) return; // la partida puede haber terminado
+    procesarTurnoBot(sala, jugActual.id);
+  }, BOT_DELAY_MS);
+}
+
+// Procesa el turno completo de un bot (apuesta o carta según la fase)
+function procesarTurnoBot(sala, botId) {
+  const partida = sala.partida;
+  if (!partida) return;
+
+  // ── FASE APUESTAS ─────────────────────────────────────────────────────────
+  if (partida.fase === 'apuestas') {
+    const cantidad = calcularApuesta(partida, botId);
+    const resultado = registrarApuesta(partida, botId, cantidad);
+    if (resultado.error) {
+      console.warn(`[BOT] Error apuesta ${botId}:`, resultado.error);
+      return;
+    }
+    console.log(`[BOT] ${botId} apuesta ${cantidad}`);
+    emitirEstado(sala);
+    if (partida.fase === 'juego') {
+      iniciarTurnoTimer(sala);
+      dispararBotSiProcede(sala); // el siguiente jugador puede ser también un bot
+    } else {
+      // Aún en fase apuestas: siguiente turno puede ser bot
+      dispararBotSiProcede(sala);
+    }
+    return;
+  }
+
+  // ── FASE JUEGO ────────────────────────────────────────────────────────────
+  if (partida.fase === 'juego') {
+    // Verificar que sigue siendo su turno (puede haber cambiado)
+    if (partida.jugadores[partida.turnoIdx]?.id !== botId) return;
+
+    const idxCarta = elegirCarta(partida, botId);
+    const esRondaFinal = partida.subrondaActual === 4;
+    const idxReal = esRondaFinal ? 0 : idxCarta;
+
+    const resultado = jugarCarta(partida, botId, idxReal);
+    if (resultado.error) {
+      console.warn(`[BOT] Error jugarCarta ${botId}:`, resultado.error);
+      return;
+    }
+    console.log(`[BOT] ${botId} juega carta idx ${idxReal}`);
+    limpiarTurnoTimer(sala.codigo);
+    emitirEstado(sala);
+
+    if (resultado.todosJugaron) {
+      const delayReveal = partida.config.cartasBocaAbajo ? 1500 : 0;
+      setTimeout(() => resolverYContinuar(sala), delayReveal);
+    } else {
+      iniciarTurnoTimer(sala);
+      dispararBotSiProcede(sala);
+    }
+    return;
+  }
+}
+
+// Procesa la resolución de ases cuando el dueño del as es un bot
+function procesarAsesBot(sala) {
+  const res = sala.partida?.resolucion;
+  if (!res) return;
+
+  // Copiar para iterar sin mutar mientras procesamos
+  const pendientes = [...(res.asesPendientes || [])];
+
+  pendientes.forEach(palo => {
+    const asJugada = res.ases.find(a => a.carta.palo === palo);
+    if (!asJugada || !esBot(asJugada.jugadorId)) return;
+
+    const botId = asJugada.jugadorId;
+
+    setTimeout(() => {
+      if (!sala.partida?.resolucion) return;
+      const r = sala.partida.resolucion;
+
+      if (palo === 'espadas') {
+        const objetivo = elegirObjetivoAsEspadas(sala.partida, botId, r.mesa, r.gruposAnulados || []);
+        const result   = aplicarAsEspadas(r.mesa, objetivo, sala.partida.config.hardcore || false, r.gruposAnulados || []);
+        if (!result.error) {
+          r.mesa           = result.mesa;
+          r.gruposAnulados = result.gruposAnulados;
+        }
+        r.asesPendientes = r.asesPendientes.filter(p => p !== 'espadas');
+        io.to(sala.codigo).emit('mesaActualizada', { mesa: r.mesa, gruposAnulados: r.gruposAnulados });
+        console.log(`[BOT] ${botId} usa As de Espadas → objetivo`, objetivo);
+
+      } else if (palo === 'bastos') {
+        const idxObjetivo = elegirObjetivoAsBastos(sala.partida, botId, r.mesa);
+        r.mesa = aplicarAsBastos(r.mesa, idxObjetivo);
+        r.asesPendientes = r.asesPendientes.filter(p => p !== 'bastos');
+        io.to(sala.codigo).emit('mesaActualizada', { mesa: r.mesa });
+        console.log(`[BOT] ${botId} usa As de Bastos → idx ${idxObjetivo}`);
+      }
+
+      comprobarAsesResueltos(sala);
+    }, BOT_DELAY_MS);
+  });
+}
+
 // ── EVENTOS ───────────────────────────────────────────────────────────────────
 
 io.on('connection', (socket) => {
@@ -547,6 +680,36 @@ io.on('connection', (socket) => {
     io.to(sala.codigo).emit('partidaIniciada');
     emitirEstado(sala);
     callback({ ok: true });
+
+    // Si el primer turno es de un bot, dispararlo
+    dispararBotSiProcede(sala);
+  });
+
+  // Añade un bot a la sala (solo el creador, solo en lobby)
+  socket.on('agregarBot', (callback) => {
+    const sala = obtenerSalaPorSocket(socket.id);
+    if (!sala) return callback?.({ error: 'No estás en ninguna sala' });
+    if (sala.creador !== socket.id) return callback?.({ error: 'Solo el creador puede añadir bots' });
+    if (sala.estado !== 'esperando') return callback?.({ error: 'La partida ya ha comenzado' });
+    if (sala.jugadores.length >= 6) return callback?.({ error: 'Sala llena (máx. 6 jugadores)' });
+
+    agregarBots(sala, 1);
+    io.to(sala.codigo).emit('salaActualizada', sala);
+    callback?.({ ok: true, sala });
+  });
+
+  // Elimina el último bot añadido (solo el creador, solo en lobby)
+  socket.on('eliminarBot', (callback) => {
+    const sala = obtenerSalaPorSocket(socket.id);
+    if (!sala) return callback?.({ error: 'No estás en ninguna sala' });
+    if (sala.creador !== socket.id) return callback?.({ error: 'Solo el creador puede eliminar bots' });
+    if (sala.estado !== 'esperando') return callback?.({ error: 'La partida ya ha comenzado' });
+
+    const idx = [...sala.jugadores].reverse().findIndex(j => esBot(j.id));
+    if (idx === -1) return callback?.({ error: 'No hay bots en la sala' });
+    sala.jugadores.splice(sala.jugadores.length - 1 - idx, 1);
+    io.to(sala.codigo).emit('salaActualizada', sala);
+    callback?.({ ok: true, sala });
   });
 
   // El creador preselecciona el modo de juego en el lobby — se refleja a
@@ -574,6 +737,8 @@ io.on('connection', (socket) => {
       emitirEstado(sala);
       // Si tras apostar empieza la fase de juego, arrancar el timer
       if (sala.partida.fase === 'juego') iniciarTurnoTimer(sala);
+      // Si el siguiente en actuar es un bot, dispararlo
+      dispararBotSiProcede(sala);
       callback({ ok: true });
     } catch (err) {
       console.error('[ERROR apostar]', err);
@@ -605,6 +770,7 @@ io.on('connection', (socket) => {
       setTimeout(() => resolverYContinuar(sala), delayReveal);
     } else {
       iniciarTurnoTimer(sala);
+      dispararBotSiProcede(sala);
     }
     callback({ ok: true });
   });
@@ -690,7 +856,6 @@ io.on('connection', (socket) => {
       dueloTimers[sala.codigo] = setTimeout(() => {
         if (!sala.partida?.duelo || sala.partida.duelo.resuelto) return;
         console.log('[DUELO TIMEOUT] Traición automática por tiempo');
-        // Forzar traición para quien no eligió
         const d = sala.partida.duelo;
         if (!d.eleccionA) d.eleccionA = 'traicionar';
         if (!d.eleccionB) d.eleccionB = 'traicionar';
@@ -699,6 +864,30 @@ io.on('connection', (socket) => {
         emitirEstado(sala);
         delete dueloTimers[sala.codigo];
       }, DUELO_TIMEOUT_MS);
+
+      // Si algún participante del duelo es bot, resolver automáticamente
+      const { jugadorAId, jugadorBId } = duelo;
+      if (esBot(jugadorAId) || esBot(jugadorBId)) {
+        setTimeout(() => {
+          if (!sala.partida?.duelo || sala.partida.duelo.resuelto) return;
+          const d = sala.partida.duelo;
+          if (esBot(jugadorAId) && !d.eleccionA)
+            d.eleccionA = elegirEleccionDuelo(sala.partida, jugadorAId);
+          if (esBot(jugadorBId) && !d.eleccionB)
+            d.eleccionB = elegirEleccionDuelo(sala.partida, jugadorBId);
+          if (d.eleccionA && d.eleccionB) {
+            if (dueloTimers[sala.codigo]) clearTimeout(dueloTimers[sala.codigo]);
+            delete dueloTimers[sala.codigo];
+            const resultadoDuelo = resolverDuelo(sala.partida);
+            io.to(sala.codigo).emit('dueloResuelto', resultadoDuelo);
+            emitirEstado(sala);
+            dispararBotSiProcede(sala);
+          }
+        }, BOT_DELAY_MS);
+      }
+    } else {
+      // Sin duelo: si el primer turno de apuestas es de un bot, dispararlo
+      dispararBotSiProcede(sala);
     }
 
     callback({ ok: true });

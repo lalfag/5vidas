@@ -1177,9 +1177,10 @@ function renderizarSala(sala) {
     const li = document.createElement('li');
     li.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;';
     const avatarSvg = obtenerAvatarSvg(j.avatar);
+    const esBotJugador = j.esBot || String(j.id).startsWith('bot_');
     li.innerHTML = `
-      ${avatarSvg ? `<span class="avatar-mini">${avatarSvg}</span>` : ''}
-      <span class="nombre">${j.nickname}</span>
+      ${esBotJugador ? `<span title="Bot">🤖</span>` : (avatarSvg ? `<span class="avatar-mini">${avatarSvg}</span>` : '')}
+      <span class="nombre">${j.nickname}${esBotJugador ? ' <em style="font-size:0.7rem;opacity:0.6">(bot)</em>' : ''}</span>
       ${j.id === sala.creador ? `<span class="corona">👑</span>` : ''}
     `;
     lista.appendChild(li);
@@ -1199,11 +1200,35 @@ function renderizarSala(sala) {
     if (etiquetaModo) etiquetaModo.classList.add('oculto');
     sincronizarBotonesModo(modalidadSala);
     $('msg-sala').textContent = sala.jugadores.length < 2 ? 'Esperando más jugadores...' : '¡Listos para jugar!';
+
+    // Botones de bot (solo para el creador)
+    let zonaBots = $('zona-bots');
+    if (!zonaBots) {
+      zonaBots = document.createElement('div');
+      zonaBots.id = 'zona-bots';
+      zonaBots.style.cssText = 'display:flex;gap:0.5rem;justify-content:center;margin-top:0.5rem;flex-wrap:wrap;';
+      btnIniciar.insertAdjacentElement('beforebegin', zonaBots);
+    }
+    const numBots  = sala.jugadores.filter(j => j.esBot || String(j.id).startsWith('bot_')).length;
+    const puedeAdd = sala.jugadores.length < 6;
+    const puedeRem = numBots > 0;
+    zonaBots.innerHTML = `
+      <button id="btn-add-bot" ${puedeAdd ? '' : 'disabled'} style="font-size:0.85rem;padding:0.3rem 0.8rem">🤖 +Bot</button>
+      <button id="btn-rem-bot" ${puedeRem ? '' : 'disabled'} style="font-size:0.85rem;padding:0.3rem 0.8rem">🤖 −Bot</button>
+      ${numBots > 0 ? `<span style="font-size:0.75rem;opacity:0.7;align-self:center">${numBots} bot${numBots > 1 ? 's' : ''} en sala</span>` : ''}
+    `;
+    $('btn-add-bot')?.addEventListener('click', () => {
+      socket.emit('agregarBot', res => { if (res?.error) mostrarError(res.error); });
+    });
+    $('btn-rem-bot')?.addEventListener('click', () => {
+      socket.emit('eliminarBot', res => { if (res?.error) mostrarError(res.error); });
+    });
   } else {
     btnIniciar.classList.add('oculto');
     if (selectorModo) selectorModo.classList.add('oculto');
     if (etiquetaModo) etiquetaModo.classList.remove('oculto');
     $('msg-sala').textContent = 'Esperando al creador...';
+    $('zona-bots')?.remove();
   }
 }
 

@@ -809,7 +809,7 @@ button:disabled {
 #mi-mano { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; }
 
 /* ── PANELES ── */
-#panel-apuestas, #panel-ases, #panel-monedas {
+#panel-apuestas, #panel-ases {
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 12px; padding: 0.9rem;
@@ -823,7 +823,7 @@ button:disabled {
   background: rgba(10, 10, 26, 0.92);
   border-color: rgba(255,255,255,0.15);
 }
-#panel-apuestas p, #panel-ases p, #panel-monedas p {
+#panel-apuestas p, #panel-ases p {
   font-size: 0.88rem; color: var(--gris); text-align: center;
 }
 #botones-apuesta, #botones-as {
@@ -833,28 +833,6 @@ button:disabled {
   flex: none; min-width: 48px; padding: 0.5rem 0.7rem;
   font-size: 1rem; border-radius: 8px;
   box-shadow: 0 2px 8px rgba(233,69,96,0.2);
-}
-
-/* ── VEGAS: panel de apuesta de monedas ── */
-#panel-monedas {
-  border-color: rgba(240,192,64,0.25);
-}
-#panel-monedas input[type="range"] {
-  accent-color: var(--dorado);
-  height: 4px;
-}
-.btn-monedas-rapido {
-  font-size: 0.78rem; padding: 0.35rem 0.6rem;
-  background: rgba(240,192,64,0.1);
-  border: 1px solid rgba(240,192,64,0.3);
-  border-radius: 8px; color: var(--dorado);
-}
-.btn-monedas-rapido:hover { background: rgba(240,192,64,0.2); }
-#btn-confirmar-monedas {
-  background: linear-gradient(135deg, #145a32, #0f3460);
-  border: 1px solid rgba(240,192,64,0.35);
-  color: var(--dorado); font-weight: 700;
-  padding: 0.6rem 1.2rem; border-radius: 10px;
 }
 
 /* ── VEGAS: panel de economía (siempre visible) ── */
