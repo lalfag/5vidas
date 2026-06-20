@@ -69,8 +69,7 @@ function estadoVegasInicial(jugadores) {
   jugadores.forEach(j => { monedas[j.id] = MONEDAS_INICIALES; });
   return {
     monedas,
-    bancaVidas:    0,
-    bancaApuestas: 0
+    bote: 0  // monedas de fallos pendientes de repartir (si nadie acertó, se acumula)
   };
 }
 
@@ -109,7 +108,6 @@ function crearPartida(jugadores, modalidad = 'clasico') {
       avatar:       j.avatar || null,
       mano:         [],
       apuesta:      null,
-      apuestaMonedas: null, // VEGAS: monedas arriesgadas esta subronda
       bazasGanadas: 0,
       // Estado Hardcore por jugador
       mana:         config.hardcore ? estadoManaInicial() : null
@@ -146,7 +144,6 @@ function iniciarSubronda(partida) {
   partida.jugadores.forEach((j, i) => {
     j.mano         = manos[i];
     j.apuesta      = null;
-    j.apuestaMonedas = null;
     j.bazasGanadas = 0;
     j.manoBarajada = false;
     j.espiadoPor   = [];
@@ -385,21 +382,6 @@ function registrarApuesta(partida, jugadorId, cantidad) {
     if (l) logros.push(l);
   }
 
-  // VEGAS: tras apostar bazas, el mismo jugador debe apostar monedas antes de
-  // que su "turno de apuesta" se considere completo. Si no tiene monedas,
-  // se resuelve automáticamente con 0 (no se le puede forzar un mínimo de 1
-  // si su saldo es 0).
-  if (partida.config.economia) {
-    const saldo = partida.vegas.monedas[jugadorId] ?? 0;
-    if (saldo <= 0) {
-      jugador.apuestaMonedas = 0;
-      completarTurnoApuesta(partida, apuestaSimultanea);
-      return { ok: true, partida, logros };
-    }
-    // Pendiente de apostar monedas — el "turno" de apuesta no se completa aún
-    return { ok: true, partida, logros, esperandoMonedas: true, saldoMonedas: saldo };
-  }
-
   completarTurnoApuesta(partida, apuestaSimultanea);
   return { ok: true, partida, logros };
 }
@@ -426,41 +408,6 @@ function completarTurnoApuesta(partida, apuestaSimultanea) {
     partida.turnoIdx = partida.iniciadorIdx;
     log(partida, 'Apuestas completadas — comienza el juego');
   }
-}
-
-// VEGAS: registra la apuesta de monedas del jugador (segundo paso de su
-// turno de apuesta). Debe haber apostado bazas ya (jugador.apuesta !== null)
-// y aún no haber apostado monedas (jugador.apuestaMonedas === null).
-function registrarApuestaMonedas(partida, jugadorId, cantidadMonedas) {
-  if (!partida.config.economia) return { error: 'Esta modalidad no usa monedas' };
-
-  const jugador = partida.jugadores.find(j => j.id === jugadorId);
-  if (!jugador) return { error: 'Jugador no encontrado' };
-  if (partida.fase !== 'apuestas') return { error: 'No es fase de apuestas' };
-  if (jugador.apuesta === null) return { error: 'Primero debes apostar bazas' };
-  if (jugador.apuestaMonedas !== null) return { error: 'Ya has apostado monedas' };
-
-  const saldo = partida.vegas.monedas[jugadorId] ?? 0;
-  cantidadMonedas = Math.floor(cantidadMonedas);
-
-  const maximo = Math.floor(saldo * 0.20);
-
-  if (cantidadMonedas === 0) {
-    // Pasar: válido siempre (no arriesga nada)
-  } else if (saldo <= 0 || maximo === 0) {
-    cantidadMonedas = 0; // forzar a 0 si no puede apostar
-  } else if (cantidadMonedas < 1 || cantidadMonedas > maximo) {
-    return { error: `Debes arriesgar entre 1 y ${maximo} monedas (20% de tu saldo)` };
-  }
-
-  jugador.apuestaMonedas = cantidadMonedas;
-  log(partida, `${jugador.nickname} arriesga ${cantidadMonedas} monedas`);
-
-  const esRondaFinal      = partida.subrondaActual === 4;
-  const apuestaSimultanea = esApuestaSimultanea(partida.modalidad, esRondaFinal);
-  completarTurnoApuesta(partida, apuestaSimultanea);
-
-  return { ok: true, partida };
 }
 
 // ── JUGAR CARTA ───────────────────────────────────────────────────────────────
@@ -836,11 +783,10 @@ function vistaPublica(partida, miId) {
     inversionEscala:   partida.inversionEscala || false,
     duelo:             dueloPublico,
     rivalesOrden,
-    // VEGAS: economía — monedas de todos (info pública de casino) + bancas
+    // VEGAS: economía — monedas de todos (info pública)
     vegas: partida.vegas ? {
-      monedas:       { ...partida.vegas.monedas },
-      bancaVidas:    partida.vegas.bancaVidas,
-      bancaApuestas: partida.vegas.bancaApuestas
+      monedas: { ...partida.vegas.monedas },
+      bote:    partida.vegas.bote
     } : null,
     config: {
       rondaFinalEspiar:   config.rondaFinalEspiar,
@@ -858,10 +804,6 @@ function vistaPublica(partida, miId) {
       apuesta:      esRondaFinal
         ? (todosApostaron || j.id === miId ? j.apuesta : null)
         : j.apuesta,
-      // VEGAS: visible para todos, igual que la apuesta de bazas
-      apuestaMonedas: esRondaFinal
-        ? (todosApostaron || j.id === miId ? j.apuestaMonedas : null)
-        : j.apuestaMonedas,
       bazasGanadas: j.bazasGanadas,
       cartasEnMano: j.mano.length,
       manoBarajada: j.manoBarajada || false,
@@ -891,7 +833,6 @@ module.exports = {
   crearPartida,
   iniciarSubronda,
   registrarApuesta,
-  registrarApuestaMonedas,
   registrarEleccionDuelo,
   resolverDuelo,
   jugarCarta,

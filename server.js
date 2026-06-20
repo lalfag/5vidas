@@ -6,7 +6,7 @@ const {
   obtenerSalaPorSocket, obtenerSalaPorToken, eliminarJugador
 } = require('./game/roomManager');
 const {
-  crearPartida, iniciarSubronda, registrarApuesta, registrarApuestaMonedas,
+  crearPartida, iniciarSubronda, registrarApuesta,
   registrarEleccionDuelo, resolverDuelo,
   jugarCarta, aplicar7Oros, espiarCarta, vistaPublica,
   aplicarMana, comprobarLogrosMinironda, comprobarLogrosSubronda,
@@ -226,82 +226,56 @@ function finalizarMinironda(sala, ganadorId, contextoLogros = null) {
 }
 
 // VEGAS: resuelve la economía de la subronda.
-// Modelo:
-//   • Fallar bazas → pierdes 10 monedas × vidasRestadas de tu saldo.
-//     Esas monedas van al bote de vidas que se reparte entre quienes acertaron.
-//   • Apuesta de monedas ("cuán seguro estás") → la banca (ilimitada) paga a
-//     los acertantes (×2 lo arriesgado) y se queda lo que pierden los que fallan.
-//     Los fallos SÍ descuentan monedas del jugador (van a la banca, no circulan).
+// Modelo de suma cero:
+//   • Quienes fallan pierden monedas (|bazas - apuesta| × MONEDAS_POR_VIDA)
+//   • Esas monedas van al bote
+//   • El bote se reparte a partes iguales entre quienes acertaron exactamente
+//   • Si nadie acertó, el bote se acumula a la siguiente subronda
+//   • Al llegar a 0 monedas el jugador es eliminado (como 0 vidas)
 function resolverEconomiaVegas(partida) {
   const vegas = partida.vegas;
   const movimientos = [];
 
-  // ── PASO A: BOTE DE VIDAS ─────────────────────────────────────────────
-  // Solo se descuentan monedas a los que fallan si hay al menos un ganador
-  // que las vaya a recibir. Si nadie acertó, nadie pierde nada esa ronda
-  // (no tiene sentido penalizar si el bote no va a ningún sitio) y el
-  // bote acumulado de bancaVidas se arrastra a la siguiente subronda.
-  const ganadoresVidas = partida.jugadores.filter(j =>
+  const acertantes = partida.jugadores.filter(j =>
     calcularVidasARestar(j.apuesta, j.bazasGanadas) === 0
   );
 
-  let boteVidas = vegas.bancaVidas;
+  let bote = vegas.bote; // bote acumulado de subrondas anteriores sin ganador
 
-  if (ganadoresVidas.length > 0) {
-    // Hay ganadores: descontar a los que fallaron
-    partida.jugadores.forEach(j => {
-      const restar = calcularVidasARestar(j.apuesta, j.bazasGanadas);
-      if (restar === 0) return;
-      const coste = restar * MONEDAS_POR_VIDA;
-      const saldo = vegas.monedas[j.id] ?? 0;
-      const descuento = Math.min(coste, saldo);
-      vegas.monedas[j.id] = saldo - descuento;
-      boteVidas += descuento;
-      movimientos.push({ jugadorId: j.id, nickname: j.nickname, delta: -descuento, motivo: 'vidas_perdidas' });
-    });
-
-    const parte = Math.floor(boteVidas / ganadoresVidas.length);
-    const resto = boteVidas % ganadoresVidas.length;
-    ganadoresVidas.forEach(j => {
-      vegas.monedas[j.id] = (vegas.monedas[j.id] ?? 0) + parte;
-      if (parte > 0) movimientos.push({ jugadorId: j.id, nickname: j.nickname, delta: parte, motivo: 'bote_vidas' });
-    });
-    vegas.bancaVidas = resto;
-  } else {
-    // Nadie acertó: bote intacto, se arrastra a la próxima subronda
-    vegas.bancaVidas = boteVidas;
-  }
-
-  // ── PASO B: APUESTAS DE MONEDAS (banca ilimitada) ─────────────────────
-  // Quien falla: pierde lo arriesgado (sale de su saldo, va a la banca).
-  // Quien acierta: recibe el doble de lo arriesgado (la banca lo paga).
-  // Los dos flujos son independientes — no circula dinero entre jugadores aquí.
+  // Paso 1: cobrar a los que fallaron
   partida.jugadores.forEach(j => {
-    const arriesgado = j.apuestaMonedas || 0;
-    if (arriesgado <= 0) return;
-    const acerto = calcularVidasARestar(j.apuesta, j.bazasGanadas) === 0;
-    if (acerto) {
-      // La banca paga el doble (no sale de otros jugadores)
-      vegas.monedas[j.id] = (vegas.monedas[j.id] ?? 0) + arriesgado * 2;
-      movimientos.push({ jugadorId: j.id, nickname: j.nickname, delta: arriesgado * 2, motivo: 'apuesta_ganada' });
-    } else {
-      // Pierde lo arriesgado (ya lo había apartado mentalmente el jugador)
-      const saldo = vegas.monedas[j.id] ?? 0;
-      const descuento = Math.min(arriesgado, saldo);
-      vegas.monedas[j.id] = saldo - descuento;
-      movimientos.push({ jugadorId: j.id, nickname: j.nickname, delta: -descuento, motivo: 'apuesta_perdida' });
-    }
+    const error = calcularVidasARestar(j.apuesta, j.bazasGanadas);
+    if (error === 0) return;
+    const coste    = error * MONEDAS_POR_VIDA;
+    const saldo    = vegas.monedas[j.id] ?? 0;
+    const descuento = Math.min(coste, saldo);
+    vegas.monedas[j.id] = saldo - descuento;
+    bote += descuento;
+    movimientos.push({ jugadorId: j.id, nickname: j.nickname, delta: -descuento, motivo: 'fallo' });
   });
 
-  // Sincronizar vidas con monedas (1 vida = 10 monedas, mínimo 0)
+  // Paso 2: repartir bote entre acertantes
+  if (acertantes.length > 0) {
+    const parte = Math.floor(bote / acertantes.length);
+    const resto  = bote % acertantes.length;
+    acertantes.forEach(j => {
+      vegas.monedas[j.id] = (vegas.monedas[j.id] ?? 0) + parte;
+      if (parte > 0) movimientos.push({ jugadorId: j.id, nickname: j.nickname, delta: parte, motivo: 'acierto' });
+    });
+    vegas.bote = resto; // el céntimo impar se arrastra
+  } else {
+    // Nadie acertó: bote intacto, se arrastra
+    vegas.bote = bote;
+  }
+
+  // Sincronizar vidas con monedas
   partida.jugadores.forEach(j => {
     j.vidas = Math.floor((vegas.monedas[j.id] ?? 0) / MONEDAS_POR_VIDA);
   });
 
   return {
-    monedas:       { ...vegas.monedas },
-    bancaVidas:    vegas.bancaVidas,
-    bancaApuestas: vegas.bancaApuestas,
+    monedas:    { ...vegas.monedas },
+    bote:       vegas.bote,
     movimientos
   };
 }
@@ -600,27 +574,10 @@ io.on('connection', (socket) => {
       emitirEstado(sala);
       // Si tras apostar empieza la fase de juego, arrancar el timer
       if (sala.partida.fase === 'juego') iniciarTurnoTimer(sala);
-      callback({ ok: true, esperandoMonedas: resultado.esperandoMonedas || false, saldoMonedas: resultado.saldoMonedas });
+      callback({ ok: true });
     } catch (err) {
       console.error('[ERROR apostar]', err);
       callback({ error: 'Error interno al procesar la apuesta' });
-    }
-  });
-
-  // VEGAS: segundo paso del turno de apuesta — arriesgar monedas sobre la
-  // apuesta de bazas que el jugador acaba de hacer
-  socket.on('apostarMonedas', ({ cantidad }, callback) => {
-    try {
-      const sala = obtenerSalaPorSocket(socket.id);
-      if (!sala || !sala.partida) return callback({ error: 'Sin partida activa' });
-      const resultado = registrarApuestaMonedas(sala.partida, socket.id, cantidad);
-      if (resultado.error) return callback({ error: resultado.error });
-      emitirEstado(sala);
-      if (sala.partida.fase === 'juego') iniciarTurnoTimer(sala);
-      callback({ ok: true });
-    } catch (err) {
-      console.error('[ERROR apostarMonedas]', err);
-      callback({ error: 'Error interno al procesar la apuesta de monedas' });
     }
   });
 
@@ -927,9 +884,7 @@ io.on('connection', (socket) => {
         // VEGAS: el "turno de apuesta" solo cuenta en apuestasRealizadas si
         // se completó del todo (bazas + monedas). Si apostó bazas pero
         // desconectó antes de apostar monedas, NO se había contabilizado aún.
-        const habiaApostado = partida.config.economia
-          ? (jugador.apuesta !== null && jugador.apuestaMonedas !== null)
-          : (jugador.apuesta !== null);
+        const habiaApostado = jugador.apuesta !== null;
         // VEGAS: caso especial — apostó bazas pero no llegó a apostar monedas.
         // Su "media apuesta" no debe quedar contaminando el estado del
         // siguiente jugador ni el recuento; simplemente se descarta junto
