@@ -415,8 +415,46 @@ function finalizarSubronda(sala) {
   const idxAnterior = partida.iniciadorSubrondaIdx ?? 0;
   partida.iniciadorSubrondaIdx = (idxAnterior + 1) % partida.jugadores.length;
 
-  if (partida.subrondaActual >= 4) {
-    partida.subrondaActual = 0;
+  // VEGAS: estructura de 2 subrondas de 1 carta (índices 0 y 1 del array [1,1])
+  // Al terminar la subronda 1 (segunda), la partida termina en finalizarSubronda.
+  // Modo normal: 5 subrondas (0→4), al llegar a 4 cicla de nuevo (para partidas
+  // circulares si se extienden, aunque lo normal es que haya ganador antes).
+  const esVegas = partida.config.economia;
+  const ultimaSubronda = esVegas ? 1 : 4;
+
+  if (partida.subrondaActual >= ultimaSubronda) {
+    if (esVegas) {
+      // En Vegas la partida debe terminar tras la última subronda.
+      // finalizarSubronda ya habrá emitido subrondaTerminada; aquí forzamos
+      // fin de partida si quedaron más de 1 jugador vivo (gana quien tenga
+      // más monedas, o si hay empate, el primero en el array).
+      partida.jugadores.sort((a, b) => {
+        const mA = partida.vegas?.monedas?.[a.id] ?? 0;
+        const mB = partida.vegas?.monedas?.[b.id] ?? 0;
+        return mB - mA;
+      });
+      const ganador = partida.jugadores[0] || null;
+      io.to(sala.codigo).emit('partidaTerminada', { ganador, motivoFin: 'vegas' });
+
+      setTimeout(() => {
+        const todosLosJugadores = [
+          ...(partida.jugadores || []),
+          ...(sala.espectadores || [])
+        ].map(j => ({
+          id: j.id, nickname: j.nickname, token: j.token,
+          avatar: j.avatar || null, vidas: 5, listo: false
+        }));
+        sala.jugadores    = todosLosJugadores;
+        sala.espectadores = [];
+        sala.partida      = null;
+        sala.estado       = 'esperando';
+        io.to(sala.codigo).emit('salaReseteada', { sala });
+      }, 5000);
+
+      return; // no avanzar subronda
+    } else {
+      partida.subrondaActual = 0;
+    }
   } else {
     partida.subrondaActual++;
   }
@@ -484,11 +522,31 @@ function agregarBots(sala, cantidad) {
 function dispararBotSiProcede(sala) {
   if (!sala.partida) return;
   const partida = sala.partida;
+
+  // En fase de apuestas: buscar el primer bot que aún no haya apostado
+  // (turnoIdx puede no apuntar al bot correcto si hay desincronía)
+  if (partida.fase === 'apuestas') {
+    const botPendiente = partida.jugadores.find(
+      j => esBot(j.id) && j.apuesta === undefined
+    );
+    // Si hay un bot pendiente pero turnoIdx no apunta a él,
+    // verificar que es su turno según el orden de apuesta
+    const jugEnTurno = partida.jugadores[partida.turnoIdx];
+    if (!jugEnTurno || !esBot(jugEnTurno.id)) return; // no es turno de bot
+    if (jugEnTurno.apuesta !== undefined) return; // ya apostó
+    setTimeout(() => {
+      if (!sala.partida) return;
+      procesarTurnoBot(sala, jugEnTurno.id);
+    }, BOT_DELAY_MS);
+    return;
+  }
+
+  // En fase de juego: el turno lo marca turnoIdx directamente
   const jugActual = partida.jugadores[partida.turnoIdx];
   if (!jugActual || !esBot(jugActual.id)) return;
 
   setTimeout(() => {
-    if (!sala.partida) return; // la partida puede haber terminado
+    if (!sala.partida) return;
     procesarTurnoBot(sala, jugActual.id);
   }, BOT_DELAY_MS);
 }
@@ -503,7 +561,13 @@ function procesarTurnoBot(sala, botId) {
     const cantidad = calcularApuesta(partida, botId);
     const resultado = registrarApuesta(partida, botId, cantidad);
     if (resultado.error) {
-      console.warn(`[BOT] Error apuesta ${botId}:`, resultado.error);
+      console.warn(`[BOT] Error apuesta ${botId} (cantidad=${cantidad}, subronda=${partida.subrondaActual}, turnoIdx=${partida.turnoIdx}, jugadorEnTurno=${partida.jugadores[partida.turnoIdx]?.id}):`, resultado.error);
+      // Si el error es de turno (no es su momento), esperar y reintentar una vez
+      if (resultado.error.includes('turno') || resultado.error.includes('No es') || resultado.error.includes('ya apostaste')) {
+        // No es nuestro turno o ya apostamos: no hacer nada, dispararBotSiProcede
+        // lo volverá a llamar cuando sea el momento correcto
+        dispararBotSiProcede(sala);
+      }
       return;
     }
     console.log(`[BOT] ${botId} apuesta ${cantidad}`);
@@ -524,7 +588,7 @@ function procesarTurnoBot(sala, botId) {
     if (partida.jugadores[partida.turnoIdx]?.id !== botId) return;
 
     const idxCarta = elegirCarta(partida, botId);
-    const esRondaFinal = partida.subrondaActual === 4;
+    const esRondaFinal = (partida.jugadores.find(j => j.id === botId)?.mano?.length ?? 0) === 1;
     const idxReal = esRondaFinal ? 0 : idxCarta;
 
     const resultado = jugarCarta(partida, botId, idxReal);

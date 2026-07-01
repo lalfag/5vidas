@@ -4,7 +4,7 @@
 
 const BOT_PREFIX   = 'bot_';
 const BOT_DELAY_MS = 1400; // ms de "pensar" antes de actuar (evita parecer instantáneo)
-const BOT_NICKNAMES = ['Roboto', 'ARIA', 'NEXUS', 'HAL', 'CHIP', 'VERA', 'OTTO', 'NORA'];
+const BOT_NICKNAMES = ['Lazono', 'Brezai', 'Moranco', 'Tortuga', 'Paco', 'Bombah', 'Luismi'];
 
 // ── IDENTIFICACIÓN ────────────────────────────────────────────────────────────
 
@@ -64,7 +64,9 @@ function calcularApuesta(partida, botId) {
 
   const numCartas    = partida.jugadores[0]?.mano?.length ?? 1;
   const numJugadores = partida.jugadores.length;
-  const esRondaFinal = partida.subrondaActual === 4;
+  // La ronda final es cualquier subronda donde se reparte 1 carta,
+  // independientemente del modo (Vegas empieza en subronda 0 con 1 carta).
+  const esRondaFinal = numCartas === 1;
 
   let apuesta;
 
@@ -109,7 +111,8 @@ function elegirCarta(partida, botId) {
   const bot  = partida.jugadores.find(j => j.id === botId);
   if (!bot || bot.mano.length === 0) return 0;
 
-  const esRondaFinal = partida.subrondaActual === 4;
+  // Igual que en calcularApuesta: ronda final = 1 carta en mano
+  const esRondaFinal = bot.mano.length === 1;
 
   // En la ronda final solo hay 1 carta: forzado
   if (esRondaFinal || bot.mano.length === 1) return 0;
